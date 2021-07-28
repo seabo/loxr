@@ -3,13 +3,12 @@ use crate::chunk::{Chunk, Op};
 fn disassemble_code(chunk: &Chunk) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
-    for (idx, op) in chunk.code.iter().enumerate() {
+    for (idx, (op, _lineno)) in chunk.code.iter().enumerate() {
         let formatted_op = match op {
             Op::Return => "OP_RETURN".to_string(),
-            Op::Constant(offset) => format!(
-                "OP_CONSTANT {} ({})",
-                offset, chunk.constants.values[*offset]
-            ),
+            Op::Constant(offset) => {
+                format!("OP_CONSTANT {} ({})", offset, chunk.constants[*offset])
+            }
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }
@@ -24,7 +23,7 @@ pub fn disassemble_chunk(chunk: &Chunk, name: &str) -> String {
     }
 
     lines.push("\n------- constants --------".to_string());
-    for (idx, constant) in chunk.constants.values.iter().enumerate() {
+    for (idx, constant) in chunk.constants.iter().enumerate() {
         lines.push(format!("{:>4} {}", idx, constant));
     }
 
