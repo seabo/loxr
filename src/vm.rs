@@ -64,7 +64,7 @@ impl VM {
             }
             Op::Negate => {
                 let top_stack = self.peek();
-                let maybe_number = VM::extract_number(top_stack);
+                let maybe_number = top_stack.extract_number();
 
                 match maybe_number {
                     Some(to_negate) => {
@@ -75,6 +75,82 @@ impl VM {
                         return Err(InterpreterError::Runtime(format!(
                             "invalid operand to unary op negate. Expected number, found {:?} at line {}",
                             value::type_of(top_stack), lineno.value
+                        )))
+                    }
+                }
+            }
+            Op::Add => {
+                let top = self.pop().unwrap();
+                let second = self.pop().unwrap();
+
+                let maybe_b = top.extract_number();
+                let maybe_a = second.extract_number();
+
+                match (maybe_a, maybe_b) {
+                    (Some(a), Some(b)) => {
+                        self.stack.push(Value::Number(a + b));
+                    },
+                    _ => {
+                        return Err(InterpreterError::Runtime(format!(
+                            "invalid operand to binary op add. Expected number + number, found {:?} + {:?} at line {}",
+                            value::type_of(&top), value::type_of(&second), lineno
+                        )))
+                    }
+                }
+            }
+            Op::Subtract => {
+                let top = self.pop().unwrap();
+                let second = self.pop().unwrap();
+
+                let maybe_b = top.extract_number();
+                let maybe_a = second.extract_number();
+
+                match (maybe_a, maybe_b) {
+                    (Some(a), Some(b)) => {
+                        self.stack.push(Value::Number(a - b));
+                    },
+                    _ => {
+                        return Err(InterpreterError::Runtime(format!(
+                            "invalid operand to binary op subtract. Expected number + number, found {:?} + {:?} at line {}",
+                            value::type_of(&top), value::type_of(&second), lineno
+                        )))
+                    }
+                }
+            }
+            Op::Multiply => {
+                let top = self.pop().unwrap();
+                let second = self.pop().unwrap();
+
+                let maybe_b = top.extract_number();
+                let maybe_a = second.extract_number();
+
+                match (maybe_a, maybe_b) {
+                    (Some(a), Some(b)) => {
+                        self.stack.push(Value::Number(a * b));
+                    },
+                    _ => {
+                        return Err(InterpreterError::Runtime(format!(
+                            "invalid operand to binary op multiply. Expected number * number, found {:?} + {:?} at line {}",
+                            value::type_of(&top), value::type_of(&second), lineno
+                        )))
+                    }
+                }
+            }
+            Op::Divide => {
+                let top = self.pop().unwrap();
+                let second = self.pop().unwrap();
+
+                let maybe_b = top.extract_number();
+                let maybe_a = second.extract_number();
+
+                match (maybe_a, maybe_b) {
+                    (Some(a), Some(b)) => {
+                        self.stack.push(Value::Number(a / b));
+                    },
+                    _ => {
+                        return Err(InterpreterError::Runtime(format!(
+                            "invalid operand to binary op divide. Expected number * number, found {:?} + {:?} at line {}",
+                            value::type_of(&top), value::type_of(&second), lineno
                         )))
                     }
                 }
@@ -105,13 +181,6 @@ impl VM {
 
         match constant {
             Constant::Number(n) => Value::Number(n),
-        }
-    }
-
-    fn extract_number(val: &Value) -> Option<f64> {
-        match val {
-            Value::Number(f) => Some(*f),
-            _ => None,
         }
     }
 }

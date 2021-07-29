@@ -10,6 +10,10 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
                 format!("OP_CONSTANT {} ({})", offset, chunk.get_constant(offset))
             }
             Op::Negate => "OP_NEGATE".to_string(),
+            Op::Add => "OP_ADD".to_string(),
+            Op::Subtract => "OP_SUBTRACT".to_string(),
+            Op::Multiply => "OP_MULTIPLY".to_string(),
+            Op::Divide => "OP_DIVIDE".to_string(),
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }

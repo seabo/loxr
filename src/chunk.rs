@@ -6,9 +6,13 @@ use std::fmt;
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 #[serde(untagged)]
 pub enum Op {
+    Return,
     Constant(usize),
     Negate,
-    Return,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
 }
 
 #[derive(Debug, Clone)]
