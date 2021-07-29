@@ -1,3 +1,4 @@
+use crate::value::Value;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -6,6 +7,7 @@ use std::fmt;
 #[serde(untagged)]
 pub enum Op {
     Constant(usize),
+    Negate,
     Return,
 }
 

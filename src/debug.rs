@@ -9,6 +9,7 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
             Op::Constant(offset) => {
                 format!("OP_CONSTANT {} ({})", offset, chunk.get_constant(offset))
             }
+            Op::Negate => "OP_NEGATE".to_string(),
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }
