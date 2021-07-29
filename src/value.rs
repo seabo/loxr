@@ -13,7 +13,6 @@ impl Value {
     pub fn extract_number(&self) -> Option<f64> {
         match self {
             Value::Number(f) => Some(*f),
-            _ => None,
         }
     }
 }

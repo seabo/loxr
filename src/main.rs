@@ -1,27 +1,61 @@
+extern crate clap;
+
+use clap::{App, Arg};
+
+use std::fs;
+
 mod chunk;
+mod compiler;
 mod debug;
+mod scanner;
 mod value;
 mod vm;
 
-use chunk::{Chunk, Constant::Number, Op};
+static INPUT_STR: &str = "INPUT";
+
+fn get_input(matches: &clap::ArgMatches<'_>) -> Option<String> {
+    if let Some(input_file) = matches.value_of(INPUT_STR) {
+        match fs::read_to_string(input_file) {
+            Ok(input) => {
+                println!("{}", input);
+                return Some(input);
+            }
+            Err(err) => {
+                println!("Error reading {}: {}", input_file, err);
+                std::process::exit(-1);
+            }
+        }
+    }
+
+    None
+}
 
 fn main() {
-    let mut chunk = Chunk::new();
+    let matches = App::new("loxr")
+        .version("0.1.0")
+        .about("lox intepreter, written in Rust")
+        .author("George Seabridge")
+        .arg(
+            Arg::with_name(INPUT_STR)
+                .help("sets input file to use")
+                .required(false)
+                .index(1),
+        )
+        .get_matches();
 
-    let constant = chunk.add_constant(Number(1.2));
-    chunk.write_chunk(Op::Constant(constant), 1);
-    let constant2 = chunk.add_constant(Number(3.4));
-    chunk.write_chunk(Op::Constant(constant2), 1);
-    chunk.write_chunk(Op::Add, 1);
-    let constant3 = chunk.add_constant(Number(5.6));
-    chunk.write_chunk(Op::Constant(constant3), 1);
-    chunk.write_chunk(Op::Divide, 1);
-    chunk.write_chunk(Op::Negate, 1);
-    chunk.write_chunk(Op::Return, 1);
+    if let Some(input) = get_input(&matches) {
+        let maybe_chunk = compiler::Compiler::compile(input.clone());
+        match maybe_chunk {
+            Ok(chunk) => {
+                let mut vm = vm::VM::new(chunk);
+                let _res = vm.interpret();
+            }
+            Err(err) => {
+                println!("{}", err);
+                std::process::exit(-1);
+            }
+        }
+    }
 
-    let dis = debug::disassemble_chunk(&chunk, "some random chunk");
-    let mut vm = vm::VM::new(chunk);
-    println!("{}", dis);
-    vm.interpret();
     return ();
 }

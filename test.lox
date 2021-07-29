@@ -1,0 +1,5 @@
+ !==+++ = / +  // there's a comment here, but the lexer ignores it
+===
+!!==== "hello"
+"this is another string"
+"hi
