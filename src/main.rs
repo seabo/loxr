@@ -1,5 +1,6 @@
 mod chunk;
 mod debug;
+mod vm;
 
 use chunk::{Chunk, Constant::Number};
 
@@ -16,6 +17,8 @@ fn main() {
     chunk.write_chunk(chunk::Op::Constant(constant3), 231);
     chunk.write_chunk(chunk::Op::Constant(constant4), 233);
     let dis = debug::disassemble_chunk(&chunk, "some random chunk");
+    let mut vm = vm::VM::new(chunk);
     println!("{}", dis);
+    vm.interpret();
     return ();
 }

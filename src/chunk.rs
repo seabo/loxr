@@ -26,7 +26,7 @@ impl fmt::Display for Lineno {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Constant {
     Number(f64),
 }
@@ -61,5 +61,9 @@ impl Chunk {
             code: Vec::new(),
             constants: Vec::new(),
         }
+    }
+
+    pub fn get_constant(&self, offset: &usize) -> Constant {
+        self.constants[*offset]
     }
 }

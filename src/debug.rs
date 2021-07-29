@@ -7,7 +7,7 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
         let formatted_op = match op {
             Op::Return => "OP_RETURN".to_string(),
             Op::Constant(offset) => {
-                format!("OP_CONSTANT {} ({})", offset, chunk.constants[*offset])
+                format!("OP_CONSTANT {} ({})", offset, chunk.get_constant(offset))
             }
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
