@@ -138,6 +138,7 @@ pub struct Scanner {
     pub source: Vec<u8>,
     pub err: Option<String>,
     start: usize,
+    start_col: i64,
     current: usize,
     line: usize,
     col: i64,
@@ -150,6 +151,7 @@ impl Scanner {
             source: source.clone().into_bytes(),
             err: None,
             start: 0,
+            start_col: 0,
             current: 0,
             line: 1,
             col: 0,
@@ -180,6 +182,7 @@ impl Scanner {
     pub fn scan_token(&mut self) -> Token {
         self.skip_whitespace();
         self.start = self.current;
+        self.start_col = self.col;
 
         if self.is_at_end() {
             return self.make_token(TokenType::Eof);
@@ -257,7 +260,7 @@ impl Scanner {
             start: self.start,
             length: self.current - self.start,
             line: self.line,
-            col: self.col,
+            col: self.start_col,
         }
     }
 
@@ -305,6 +308,7 @@ impl Scanner {
                 '\n' => {
                     self.line += 1;
                     self.col = 0;
+                    self.start_col = 0;
                     self.advance();
                 }
                 '/' => {
@@ -326,6 +330,7 @@ impl Scanner {
             if self.peek() == '\n' {
                 self.line += 1;
                 self.col = 0;
+                self.start_col = 0;
             }
 
             self.advance();

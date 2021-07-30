@@ -12,6 +12,8 @@ pub struct Parser<'a> {
     previous: Token,
     scanner: &'a mut Scanner,
     source: String,
+    had_error: bool,
+    panic_mode: bool,
 }
 
 impl Parser<'_> {
@@ -33,6 +35,8 @@ impl Parser<'_> {
             },
             scanner,
             source,
+            had_error: false,
+            panic_mode: false,
         }
     }
 
@@ -48,11 +52,15 @@ impl Parser<'_> {
         }
     }
 
-    fn report_error(&self) {
-        if self.current.ty != TokenType::Error {
-            // The current token is not actually an error
+    fn report_error(&mut self) {
+        if self.panic_mode || self.current.ty != TokenType::Error {
+            // If we are already in panic mode,
+            // or the loaded token is not actually
+            // an error token, then we do not have
+            // an error and can return early
             return;
         } else {
+            self.panic_mode = true;
             self.print_error();
         }
     }
@@ -71,7 +79,7 @@ impl Parser<'_> {
         print!("{}", BrightBlue.paint("| "));
         println!("{}", self.source.lines().nth(error_token.line - 1).unwrap());
         print!("{}", BrightBlue.paint("   | "));
-        print!("{: >1$}", "", error_token.start);
+        print!("{: >1$}", "", (error_token.col as usize) - 1);
         println!("{:^<1$}", Yellow.bold().paint("^"), error_token.length);
         println!("");
     }
