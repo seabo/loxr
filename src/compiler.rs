@@ -1,6 +1,8 @@
 use crate::chunk;
 use crate::scanner;
 
+use term_painter::{Attr::*, Color::*, ToStyle};
+
 use chunk::Chunk;
 use scanner::{Scanner, TokenType};
 
@@ -30,14 +32,14 @@ impl Compiler {
         while !scanner.done() {
             let token = scanner.scan_token();
             if token.line != line {
-                print!("{:>3} ", token.line);
+                print!("{:>3} ", BrightBlue.bold().paint(token.line));
                 line = token.line;
             } else {
-                print!("  | ");
+                print!("{}", BrightBlue.paint("  | "));
             }
             print!(
                 "{:<20} '{}' \n",
-                token.ty,
+                Bold.paint(token.ty),
                 String::from_utf8(
                     scanner.source[token.start..(token.start + token.length)].to_vec()
                 )

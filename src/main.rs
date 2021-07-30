@@ -1,7 +1,7 @@
 extern crate clap;
+extern crate term_painter;
 
 use clap::{App, Arg};
-
 use std::fs;
 
 mod chunk;
