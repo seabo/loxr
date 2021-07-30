@@ -20,37 +20,7 @@ impl Compiler {
     }
 
     pub fn compile(source: String) -> Result<Chunk, String> {
-        // scanner::initScanner(input);
-        // Set up a new compiler
-        // Scan input string for tokens
-        // Match on tokens and iterate through looking for declarations
         let chunk = chunk::Chunk::new();
-        let mut scanner = Scanner::new(source);
-
-        let mut line: usize = 0;
-
-        while !scanner.done() {
-            let token = scanner.scan_token();
-            if token.line != line {
-                print!("{:>3} ", BrightBlue.bold().paint(token.line));
-                line = token.line;
-            } else {
-                print!("{}", BrightBlue.paint("  | "));
-            }
-            print!(
-                "{:<20} '{}' \n",
-                Bold.paint(token.ty),
-                String::from_utf8(
-                    scanner.source[token.start..(token.start + token.length)].to_vec()
-                )
-                .unwrap()
-            );
-
-            if token.ty == TokenType::Eof {
-                break;
-            }
-        }
-
         Ok(chunk)
     }
 }

@@ -2,6 +2,8 @@ use std::char;
 use std::collections::HashMap;
 use std::fmt;
 
+use term_painter::{Attr::*, Color::*, ToStyle};
+
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum TokenType {
     // Single character tokens
@@ -366,4 +368,30 @@ fn is_alpha(c: char) -> bool {
 
 fn is_digit(c: char) -> bool {
     c >= '0' && c <= '9'
+}
+
+pub fn print(source: String) {
+    let mut scanner = Scanner::new(source);
+
+    let mut line: usize = 0;
+
+    while !scanner.done() {
+        let token = scanner.scan_token();
+        if token.line != line {
+            print!("{:>3} ", BrightBlue.bold().paint(token.line));
+            line = token.line;
+        } else {
+            print!("{}", BrightBlue.paint("  | "));
+        }
+        print!(
+            "{:<20} '{}' \n",
+            Bold.paint(token.ty),
+            String::from_utf8(scanner.source[token.start..(token.start + token.length)].to_vec())
+                .unwrap()
+        );
+
+        if token.ty == TokenType::Eof {
+            break;
+        }
+    }
 }
