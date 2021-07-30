@@ -1,5 +1,3 @@
- !==+++ = / +  // there's a comment here, but the lexer ignores it
-===
-!!==== "hello"
-"this is another string"
-"hi
+print 1 + 2 * 90;
+print 9 * 9;
+x and y;

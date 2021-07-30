@@ -36,9 +36,12 @@ impl Compiler {
                 print!("  | ");
             }
             print!(
-                "{:?} '{:?}' \n",
+                "{:<20} '{}' \n",
                 token.ty,
-                &scanner.source[token.start..(token.start + token.length)]
+                String::from_utf8(
+                    scanner.source[token.start..(token.start + token.length)].to_vec()
+                )
+                .unwrap()
             );
 
             if token.ty == TokenType::Eof {
