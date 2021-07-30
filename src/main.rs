@@ -52,24 +52,21 @@ fn main() {
             scanner::print(input);
             return ();
         } else {
+            let maybe_chunk = compiler::compile(input.clone());
+            match maybe_chunk {
+                Ok(chunk) => {
+                    let mut vm = vm::VM::new(chunk);
+                    let _res = vm.interpret();
+                }
+                Err(err) => {
+                    println!("{}", err);
+                    std::process::exit(-1);
+                }
+            }
         }
     } else {
         println!("Error: No file was provided.");
         std::process::exit(-1);
-    }
-
-    if let Some(input) = get_input(&matches) {
-        let maybe_chunk = compiler::Compiler::compile(input.clone());
-        match maybe_chunk {
-            Ok(chunk) => {
-                let mut vm = vm::VM::new(chunk);
-                let _res = vm.interpret();
-            }
-            Err(err) => {
-                println!("{}", err);
-                std::process::exit(-1);
-            }
-        }
     }
 
     return ();

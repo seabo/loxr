@@ -6,13 +6,19 @@ use term_painter::{Attr::*, Color::*, ToStyle};
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum TokenType {
+    // Special token for initialising parser
+    Init,
+
+    // Special token for when scanner encounters an error
+    Error,
+
     // Single character tokens
     LeftParen,
     RightParen,
     LeftBrace,
     RightBrace,
-    // LeftBracket,
-    // RightBracket,
+    LeftBracket,
+    RightBracket,
     Comma,
     Dot,
     Minus,
@@ -61,10 +67,14 @@ impl fmt::Display for TokenType {
         let width = f.width();
 
         match *self {
+            TokenType::Init => f.pad("Init"),
+            TokenType::Error => f.pad("Error"),
             TokenType::LeftParen => f.pad("LeftParen"),
             TokenType::RightParen => f.pad("RightParen"),
             TokenType::LeftBrace => f.pad("LeftBrace"),
             TokenType::RightBrace => f.pad("RightBrace"),
+            TokenType::LeftBracket => f.pad("LeftBracket"),
+            TokenType::RightBracket => f.pad("RightBracket"),
             TokenType::Comma => f.pad("Comma"),
             TokenType::Dot => f.pad("Dot"),
             TokenType::Minus => f.pad("Minus"),
@@ -104,7 +114,7 @@ impl fmt::Display for TokenType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Debug)]
 pub struct Token {
     pub ty: TokenType,
     pub start: usize,
@@ -117,8 +127,8 @@ impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Token {{ ty: {:?}, line: {}, col: {}}}",
-            self.ty, self.line, self.col
+            "Token {{ ty: {}, start: {}, length: {}, line: {}, col: {}}}",
+            self.ty, self.start, self.length, self.line, self.col
         )
     }
 }
@@ -135,9 +145,9 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new(source: String) -> Scanner {
+    pub fn new(source: &String) -> Scanner {
         Scanner {
-            source: source.into_bytes(),
+            source: source.clone().into_bytes(),
             err: None,
             start: 0,
             current: 0,
@@ -251,7 +261,7 @@ impl Scanner {
         }
     }
 
-    fn advance(&mut self) -> char {
+    pub fn advance(&mut self) -> char {
         self.current += 1;
         self.col += 1;
         char::from(self.source[self.current - 1])
@@ -322,7 +332,8 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            self.err = Some(format!("Unterminated string"));
+            self.err = Some(format!("unterminated string"));
+            return self.make_token(TokenType::Error);
         }
 
         self.advance();
@@ -371,7 +382,7 @@ fn is_digit(c: char) -> bool {
 }
 
 pub fn print(source: String) {
-    let mut scanner = Scanner::new(source);
+    let mut scanner = Scanner::new(&source);
 
     let mut line: usize = 0;
 
