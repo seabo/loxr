@@ -1,5 +1,6 @@
 use crate::chunk::{Chunk, Op};
 
+#[allow(dead_code)]
 fn disassemble_code(chunk: &Chunk) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
@@ -20,6 +21,7 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
     lines
 }
 
+#[allow(dead_code)]
 pub fn disassemble_chunk(chunk: &Chunk, name: &str) -> String {
     let mut lines: Vec<String> = Vec::new();
 

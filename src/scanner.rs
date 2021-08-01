@@ -64,8 +64,6 @@ pub enum TokenType {
 
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let width = f.width();
-
         match *self {
             TokenType::Init => f.pad("Init"),
             TokenType::Error => f.pad("Error"),
@@ -179,6 +177,10 @@ impl Scanner {
         }
     }
 
+    pub fn literal(&self, start: usize, length: usize) -> String {
+        String::from_utf8(self.source[start..(start + length)].to_vec()).unwrap()
+    }
+
     pub fn scan_token(&mut self) -> Token {
         self.skip_whitespace();
         self.start = self.current;
@@ -194,6 +196,8 @@ impl Scanner {
             ')' => self.make_token(TokenType::RightParen),
             '{' => self.make_token(TokenType::LeftBrace),
             '}' => self.make_token(TokenType::RightBrace),
+            '[' => self.make_token(TokenType::LeftBracket),
+            ']' => self.make_token(TokenType::RightBracket),
             '/' => self.make_token(TokenType::Slash),
             ';' => self.make_token(TokenType::Semicolon),
             ',' => self.make_token(TokenType::Comma),
@@ -402,8 +406,7 @@ pub fn print(source: String) {
         print!(
             "{:<20} '{}' \n",
             Bold.paint(token.ty),
-            String::from_utf8(scanner.source[token.start..(token.start + token.length)].to_vec())
-                .unwrap()
+            scanner.literal(token.start, token.length)
         );
 
         if token.ty == TokenType::Eof {
