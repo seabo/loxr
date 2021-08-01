@@ -144,6 +144,7 @@ impl Parser<'_> {
 
         match operator_type {
             TokenType::Minus => self.emit_byte(Op::Negate),
+            TokenType::Bang => self.emit_byte(Op::Not),
             _ => {
                 return;
             }
@@ -185,6 +186,19 @@ impl Parser<'_> {
         }
     }
 
+    fn literal(&mut self) {
+        let tok = self.previous;
+
+        match tok.ty {
+            TokenType::False => self.emit_byte(Op::False),
+            TokenType::True => self.emit_byte(Op::True),
+            TokenType::Nil => self.emit_byte(Op::Nil),
+            _ => self.report_error(format!(
+                "this code should have been unreachable. this is likely an bug in the interpreter"
+            )),
+        }
+    }
+
     fn parse_precedence(&mut self, precedence: Precedence) {
         self.advance();
 
@@ -216,17 +230,17 @@ impl Parser<'_> {
             ParseFn::Unary => self.unary(),
             ParseFn::Binary => self.binary(),
             ParseFn::Number => self.number(),
-            // ParseFn::Literal => self.literal(can_assign),
-            // ParseFn::String => self.string(can_assign),
-            // ParseFn::Variable => self.variable(can_assign),
-            // ParseFn::And => self.and(can_assign),
-            // ParseFn::Or => self.or(can_assign),
-            // ParseFn::Call => self.call(can_assign),
-            // ParseFn::Dot => self.dot(can_assign),
-            // ParseFn::This => self.this(can_assign),
-            // ParseFn::Super => self.super_(can_assign),
-            // ParseFn::List => self.list(can_assign),
-            // ParseFn::Subscript => self.subscr(can_assign),
+            ParseFn::Literal => self.literal(),
+            // ParseFn::String => self.string(),
+            // ParseFn::Variable => self.variable(),
+            // ParseFn::And => self.and(),
+            // ParseFn::Or => self.or(),
+            // ParseFn::Call => self.call(),
+            // ParseFn::Dot => self.dot(),
+            // ParseFn::This => self.this(),
+            // ParseFn::Super => self.super_(),
+            // ParseFn::List => self.list(),
+            // ParseFn::Subscript => self.subscr(),
             _ => {}
         }
     }

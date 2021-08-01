@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+use crate::debug;
+
 #[repr(u8)]
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 #[serde(untagged)]
@@ -12,6 +14,10 @@ pub enum Op {
     Subtract,
     Multiply,
     Divide,
+    Nil,
+    True,
+    False,
+    Not,
 }
 
 #[derive(Debug, Clone)]
@@ -70,5 +76,13 @@ impl Chunk {
 
     pub fn get_constant(&self, offset: &usize) -> Constant {
         self.constants[*offset]
+    }
+}
+
+impl fmt::Display for Chunk {
+    fn fmt(&self, _f: &mut fmt::Formatter) -> fmt::Result {
+        let output = debug::disassemble_chunk(&self, "chunk");
+        println!("{}", output);
+        Ok(())
     }
 }

@@ -16,6 +16,7 @@ mod vm;
 static INPUT: &str = "INPUT";
 static SCAN: &str = "SCAN";
 static REPL: &str = "REPL";
+static BYTECODE: &str = "BYTECODE";
 
 fn get_input(matches: &clap::ArgMatches<'_>) -> Option<String> {
     if let Some(input_file) = matches.value_of(INPUT) {
@@ -54,6 +55,12 @@ fn main() {
                 .short("r")
                 .long("repl"),
         )
+        .arg(
+            Arg::with_name(BYTECODE)
+                .help("display the compiled bytecode before executing")
+                .short("b")
+                .long("bytecode"),
+        )
         .get_matches();
 
     if let Some(input) = get_input(&matches) {
@@ -67,6 +74,9 @@ fn main() {
             let maybe_chunk = compiler::compile(input.clone());
             match maybe_chunk {
                 Ok(chunk) => {
+                    if matches.is_present(BYTECODE) {
+                        println!("{}", chunk);
+                    }
                     let mut vm = vm::VM::new(chunk);
                     let _res = vm.interpret();
                 }

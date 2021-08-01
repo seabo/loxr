@@ -15,6 +15,10 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
             Op::Subtract => "OP_SUBTRACT".to_string(),
             Op::Multiply => "OP_MULTIPLY".to_string(),
             Op::Divide => "OP_DIVIDE".to_string(),
+            Op::Nil => "OP_NIL".to_string(),
+            Op::True => "OP_TRUE".to_string(),
+            Op::False => "OP_FALSE".to_string(),
+            Op::Not => "OP_NOT".to_string(),
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }

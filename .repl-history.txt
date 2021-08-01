@@ -18,3 +18,45 @@ pretty sick
 179494711587012870000000000000000 / 2346729874691847
 stack overflow
 this is a repl
+12 + 13.4
+123.456 * 654.321
+-nil
+-12
+-true
+12 + j
+12 + 12
+true and true
+-true
+-hello
+true
+12
+12+sd
+12 + 
+12 + true
+12.2 / 0
+12 + string
+-hello
+-h
+14 + -h
+true
+false
+-true
+true
+12 + 134
+!true
+true
+false
+!false
+!true
+true
+!true
+true and true
+true and false
+!nil
+nil
+!nil
+!0
+!43
+!nil
+nil
+!!43

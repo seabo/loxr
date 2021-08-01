@@ -33,6 +33,7 @@ impl VM {
             }
 
             if let Err(err) = self.step() {
+                self.report_runtime_error(&err);
                 return Err(err);
             }
         }
@@ -55,9 +56,17 @@ impl VM {
     pub fn step(&mut self) -> Result<(), InterpreterError> {
         let (op, lineno) = self.next_op_and_advance();
         match op {
-            Op::Return => {
-                self.pop().unwrap().print();
-            }
+            Op::Return => match self.pop() {
+                Some(v) => {
+                    v.print();
+                    return Ok(());
+                }
+                None => {
+                    return Err(InterpreterError::Runtime(
+                        "no return value to pop off stack".to_string(),
+                    ))
+                }
+            },
             Op::Constant(offset) => {
                 let constant = self.get_constant(&offset);
                 self.push(constant);
@@ -70,6 +79,7 @@ impl VM {
                     Some(to_negate) => {
                         self.pop();
                         self.stack.push(Value::Number(-to_negate));
+                        return Ok(());
                     },
                     None => {
                         return Err(InterpreterError::Runtime(format!(
@@ -155,6 +165,21 @@ impl VM {
                     }
                 }
             }
+            Op::Nil => self.push(Value::Nil),
+            Op::True => self.push(Value::Bool(true)),
+            Op::False => self.push(Value::Bool(false)),
+            Op::Not => {
+                let top = self.pop();
+
+                match top {
+                    Some(v) => self.push(Value::Bool(value::is_falsey(&v))),
+                    _ => {
+                        return Err(InterpreterError::Runtime(format!(
+                            "invalid operand to unary op not"
+                        )))
+                    }
+                }
+            }
         }
 
         Ok(())
@@ -182,5 +207,11 @@ impl VM {
         match constant {
             Constant::Number(n) => Value::Number(n),
         }
+    }
+
+    fn report_runtime_error(&self, err: &InterpreterError) {
+        let InterpreterError::Runtime(msg) = err;
+        let (_, lineno) = self.next_op();
+        println!("error: {} at line: {}", msg, lineno);
     }
 }
