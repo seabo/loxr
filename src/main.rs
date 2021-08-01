@@ -7,12 +7,15 @@ use std::fs;
 mod chunk;
 mod compiler;
 mod debug;
+mod line_reader;
+mod repl;
 mod scanner;
 mod value;
 mod vm;
 
 static INPUT: &str = "INPUT";
 static SCAN: &str = "SCAN";
+static REPL: &str = "REPL";
 
 fn get_input(matches: &clap::ArgMatches<'_>) -> Option<String> {
     if let Some(input_file) = matches.value_of(INPUT) {
@@ -45,11 +48,20 @@ fn main() {
                 .short("s")
                 .long("scan"),
         )
+        .arg(
+            Arg::with_name(REPL)
+                .help("launches a Lox REPL environment")
+                .short("r")
+                .long("repl"),
+        )
         .get_matches();
 
     if let Some(input) = get_input(&matches) {
         if matches.is_present(SCAN) {
             scanner::print(input);
+            return ();
+        } else if matches.is_present(REPL) {
+            repl::repl();
             return ();
         } else {
             let maybe_chunk = compiler::compile(input.clone());
