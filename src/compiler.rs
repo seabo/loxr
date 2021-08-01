@@ -3,11 +3,13 @@ use crate::scanner;
 
 use term_painter::{Attr::*, Color::*, ToStyle};
 
-use chunk::Chunk;
+use chunk::{Chunk, Op};
 use scanner::{Scanner, Token, TokenType};
+use std::cmp;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
+    chunk: Chunk,
     current: Token,
     previous: Token,
     scanner: &'a mut Scanner,
@@ -19,6 +21,7 @@ pub struct Parser<'a> {
 impl Parser<'_> {
     pub fn new(scanner: &mut Scanner, source: String) -> Parser {
         Parser {
+            chunk: Chunk::new(),
             current: Token {
                 ty: TokenType::Init,
                 col: -1,
@@ -45,52 +48,66 @@ impl Parser<'_> {
 
         loop {
             self.current = self.scanner.scan_token();
-            if self.current.ty == TokenType::Error {
-                self.report_error();
+            if self.current.ty != TokenType::Error {
+                let message = self
+                    .scanner
+                    .err
+                    .clone()
+                    .unwrap_or("unknown error".to_string());
+                self.report_error(message);
                 return;
             }
         }
     }
 
-    fn report_error(&mut self) {
-        if self.panic_mode || self.current.ty != TokenType::Error {
-            // If we are already in panic mode,
-            // or the loaded token is not actually
-            // an error token, then we do not have
-            // an error and can return early
+    fn consume(&mut self, ty: TokenType, msg: String) {
+        if self.current.ty == ty {
+            self.advance();
+            return;
+        }
+        self.report_error(msg);
+    }
+
+    fn emit_byte(&mut self, byte: Op) {
+        self.chunk.write_chunk(byte, self.previous.line);
+    }
+
+    fn emit_return(&mut self) {
+        self.emit_byte(Op::Return);
+    }
+
+    fn end_compilation(&mut self) {
+        self.emit_return();
+    }
+
+    fn report_error(&mut self, msg: String) {
+        if self.panic_mode {
             return;
         } else {
             self.panic_mode = true;
-            self.print_error();
+            self.print_error(msg);
         }
     }
-    fn print_error(&self) {
+    fn print_error(&self, msg: String) {
         let error_token = self.current;
-        let message = self
-            .scanner
-            .err
-            .clone()
-            .unwrap_or("unknown error".to_string());
         print!("{}", Yellow.bold().paint("error: "));
-        println!("{}", White.bold().paint(message));
+        println!("{}", White.bold().paint(msg));
 
         println!("{}", BrightBlue.paint("   | "));
         print!("{:<3}", BrightBlue.bold().paint(&self.current.line));
         print!("{}", BrightBlue.paint("| "));
         println!("{}", self.source.lines().nth(error_token.line - 1).unwrap());
         print!("{}", BrightBlue.paint("   | "));
-        print!("{: >1$}", "", (error_token.col as usize) - 1);
+        print!("{: >1$}", "", cmp::max(1, error_token.col as usize) - 1);
         println!("{:^<1$}", Yellow.bold().paint("^"), error_token.length);
         println!("");
     }
 }
 
 pub fn compile(source: String) -> Result<Chunk, String> {
-    let chunk = chunk::Chunk::new();
     let mut scanner = Scanner::new(&source);
     let mut parser = Parser::new(&mut scanner, source);
-
     parser.advance();
 
-    Ok(chunk)
+    Ok(parser.chunk)
 }
