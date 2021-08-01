@@ -112,6 +112,11 @@ impl Parser<'_> {
         self.chunk.write_chunk(byte, self.previous.line);
     }
 
+    fn emit_bytes(&mut self, byte1: Op, byte2: Op) {
+        self.emit_byte(byte1);
+        self.emit_byte(byte2);
+    }
+
     fn emit_return(&mut self) {
         self.emit_byte(Op::Return);
     }
@@ -162,6 +167,12 @@ impl Parser<'_> {
             TokenType::Minus => self.emit_byte(Op::Subtract),
             TokenType::Star => self.emit_byte(Op::Multiply),
             TokenType::Slash => self.emit_byte(Op::Divide),
+            TokenType::BangEqual => self.emit_bytes(Op::Equal, Op::Not),
+            TokenType::EqualEqual => self.emit_byte(Op::Equal),
+            TokenType::Greater => self.emit_byte(Op::Greater),
+            TokenType::GreaterEqual => self.emit_bytes(Op::Less, Op::Not),
+            TokenType::Less => self.emit_byte(Op::Less),
+            TokenType::LessEqual => self.emit_bytes(Op::Greater, Op::Not),
             _ => {}
         }
     }

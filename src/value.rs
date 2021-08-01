@@ -7,6 +7,7 @@ pub enum Value {
     Bool(bool),
 }
 
+#[allow(dead_code)]
 impl Value {
     pub fn print(&self) {
         println!("{}", self);
@@ -55,7 +56,16 @@ pub fn type_of(value: &Value) -> Type {
 pub fn is_falsey(value: &Value) -> bool {
     match value {
         Value::Nil => true,
-        Value::Bool(b) => !b,
+        Value::Bool(b) => *b,
         Value::Number(n) => *n == 0.0,
+    }
+}
+
+pub fn values_equal(value1: &Value, value2: &Value) -> bool {
+    match (value1, value2) {
+        (Value::Number(n1), Value::Number(n2)) => n1 == n2,
+        (Value::Nil, Value::Nil) => true,
+        (Value::Bool(b1), Value::Bool(b2)) => b1 == b2,
+        _ => false,
     }
 }

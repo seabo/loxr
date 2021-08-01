@@ -18,6 +18,9 @@ pub enum Op {
     True,
     False,
     Not,
+    Equal,
+    Greater,
+    Less,
 }
 
 #[derive(Debug, Clone)]

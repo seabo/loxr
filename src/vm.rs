@@ -172,10 +172,53 @@ impl VM {
                 let top = self.pop();
 
                 match top {
-                    Some(v) => self.push(Value::Bool(value::is_falsey(&v))),
+                    Some(v) => self.push(Value::Bool(!value::is_falsey(&v))),
                     _ => {
                         return Err(InterpreterError::Runtime(format!(
                             "invalid operand to unary op not"
+                        )))
+                    }
+                }
+            }
+            Op::Equal => {
+                let top = self.pop().unwrap();
+                let second = self.pop().unwrap();
+                self.push(Value::Bool(value::values_equal(&second, &top)));
+            }
+            Op::Greater => {
+                let top = self.pop().unwrap();
+                let second = self.pop().unwrap();
+
+                let maybe_b = top.extract_number();
+                let maybe_a = second.extract_number();
+
+                match (maybe_a, maybe_b) {
+                    (Some(a), Some(b)) => {
+                        self.stack.push(Value::Bool(a > b));
+                    },
+                    _ => {
+                        return Err(InterpreterError::Runtime(format!(
+                            "invalid operand to binary op greater. Expected number > number, found {:?} + {:?} at line {}",
+                            value::type_of(&top), value::type_of(&second), lineno
+                        )))
+                    }
+                }
+            }
+            Op::Less => {
+                let top = self.pop().unwrap();
+                let second = self.pop().unwrap();
+
+                let maybe_b = top.extract_number();
+                let maybe_a = second.extract_number();
+
+                match (maybe_a, maybe_b) {
+                    (Some(a), Some(b)) => {
+                        self.stack.push(Value::Bool(a < b));
+                    },
+                    _ => {
+                        return Err(InterpreterError::Runtime(format!(
+                            "invalid operand to binary op less. Expected number < number, found {:?} + {:?} at line {}",
+                            value::type_of(&top), value::type_of(&second), lineno
                         )))
                     }
                 }

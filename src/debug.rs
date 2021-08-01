@@ -19,6 +19,9 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
             Op::True => "OP_TRUE".to_string(),
             Op::False => "OP_FALSE".to_string(),
             Op::Not => "OP_NOT".to_string(),
+            Op::Equal => "OP_EQUAL".to_string(),
+            Op::Greater => "OP_GREATER".to_string(),
+            Op::Less => "OP_LESS".to_string(),
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }
@@ -43,6 +46,8 @@ pub fn disassemble_chunk(chunk: &Chunk, name: &str) -> String {
     for code_line in disassemble_code(&chunk) {
         lines.push(code_line);
     }
+
+    lines.push("\n========================".to_string());
 
     lines.join("\n")
 }
