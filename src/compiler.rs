@@ -157,6 +157,8 @@ impl Parser<'_> {
     fn statement(&mut self) {
         if self.matches(TokenType::Print) {
             self.print_statement();
+        } else {
+            self.expression_statement();
         }
     }
 
@@ -164,6 +166,15 @@ impl Parser<'_> {
         self.expression();
         self.consume(TokenType::Semicolon, "expect `;` after value".to_string());
         self.emit_byte(Op::Print);
+    }
+
+    fn expression_statement(&mut self) {
+        self.expression();
+        self.consume(
+            TokenType::Semicolon,
+            "expect `;` after expression".to_string(),
+        );
+        self.emit_byte(Op::Pop);
     }
 
     fn grouping(&mut self) {

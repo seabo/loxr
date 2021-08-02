@@ -226,6 +226,9 @@ impl VM {
                 let value = self.pop().unwrap();
                 value.print();
             }
+            Op::Pop => {
+                self.pop();
+            }
         }
 
         Ok(())
