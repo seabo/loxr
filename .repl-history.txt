@@ -1,20 +1,4 @@
 #V2
-nice
-nice 
-this is a repl
-pretty sick
-12 + 14
-13 * 2
-2324 - 1
-2*2*2
-123 * 2
-12 +3
-78*13
-100-23
-89 + 12
-12 +
-12 + 34
-76487163487694812*2346729874691847
 179494711587012870000000000000000 / 2346729874691847
 stack overflow
 this is a repl
@@ -94,3 +78,24 @@ print 12 + 13
 4 == 4
 "a" == "a"
 "what" == "why"
+"a string" == "a string"
+34 = 23
+"hello " + "world"
+45 + "hello"
+14 + 14
+"st" + "ri" + "ng"
+u
+"st" + "ri" + "ng"
+"st" + "riljkghsdlkifjhsljkdghslkjhgslkghslkfghjsldfgjhslkfgjhslfkghslfgkjhslfgksjhflkgsjhfglksjhfglksjhfglskjhfgslkjfhgslkfjghslkfgj" + "ng"
+"what is-a thiis"
+12 + 14
+"here is a string"
+"evaluate me"
+100 + 100 + 100 + 100
+"pretty neat" + ", ey>?!?!?!"
+12 + 143
+12 + 23
+print 13 + 24
+print 13 + 24;
+print "hello";
+print "hello" + "world";

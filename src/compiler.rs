@@ -108,6 +108,18 @@ impl Parser<'_> {
         self.report_error(msg);
     }
 
+    fn check(&mut self, ty: TokenType) -> bool {
+        self.current.ty == ty
+    }
+
+    fn matches(&mut self, ty: TokenType) -> bool {
+        if !self.check(ty) {
+            return false;
+        }
+        self.advance();
+        true
+    }
+
     fn emit_byte(&mut self, byte: Op) {
         self.chunk.write_chunk(byte, self.previous.line);
     }
@@ -117,6 +129,7 @@ impl Parser<'_> {
         self.emit_byte(byte2);
     }
 
+    #[allow(dead_code)]
     fn emit_return(&mut self) {
         self.emit_byte(Op::Return);
     }
@@ -131,12 +144,26 @@ impl Parser<'_> {
         self.emit_byte(Op::Constant(ptr));
     }
 
-    fn end_compilation(&mut self) {
-        self.emit_return();
-    }
+    fn end_compilation(&mut self) {}
 
     fn expression(&mut self) {
         self.parse_precedence(Precedence::Assignment);
+    }
+
+    fn declaration(&mut self) {
+        self.statement();
+    }
+
+    fn statement(&mut self) {
+        if self.matches(TokenType::Print) {
+            self.print_statement();
+        }
+    }
+
+    fn print_statement(&mut self) {
+        self.expression();
+        self.consume(TokenType::Semicolon, "expect `;` after value".to_string());
+        self.emit_byte(Op::Print);
     }
 
     fn grouping(&mut self) {
@@ -292,8 +319,7 @@ impl Parser<'_> {
         println!("{}", White.bold().paint(msg));
 
         println!("{}", BrightBlue.paint("   | "));
-        print!("{:<3}", BrightBlue.bold().paint(&self.current.line));
-        print!("{}", BrightBlue.paint("| "));
+        print!("{:<3}", BrightBlue.paint("| "));
         println!("{}", self.source.lines().nth(error_token.line - 1).unwrap());
         print!("{}", BrightBlue.paint("   | "));
         print!("{: >1$}", "", cmp::max(1, error_token.col as usize) - 1);
@@ -307,7 +333,12 @@ pub fn compile(source: String) -> Result<Chunk, String> {
     let mut parser = Parser::new(&mut scanner, source);
 
     parser.advance();
-    parser.expression();
+    // parser.expression();
+
+    while !parser.matches(TokenType::Eof) {
+        parser.declaration();
+    }
+
     parser.end_compilation();
 
     Ok(parser.chunk)

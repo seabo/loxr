@@ -1,1 +1,2 @@
-"a string" == "a string 2"
+print 12 + 32;
+print 13 + 22;

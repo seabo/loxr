@@ -21,6 +21,7 @@ pub enum Op {
     Equal,
     Greater,
     Less,
+    Print,
 }
 
 #[derive(Debug, Clone)]

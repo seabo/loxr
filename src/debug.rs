@@ -22,6 +22,7 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
             Op::Equal => "OP_EQUAL".to_string(),
             Op::Greater => "OP_GREATER".to_string(),
             Op::Less => "OP_LESS".to_string(),
+            Op::Print => "OP_PRINT".to_string(),
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }

@@ -2,6 +2,8 @@ use crate::chunk::{Chunk, Constant, Lineno, Op};
 use crate::value;
 use crate::value::Value;
 
+use std::collections::HashMap;
+
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub enum InterpreterError {
     Runtime(String),
@@ -11,6 +13,7 @@ pub struct VM {
     pub chunk: Chunk,
     pub ip: usize,
     pub stack: Vec<Value>,
+    pub globals: HashMap<String, Value>,
 }
 
 impl VM {
@@ -19,6 +22,7 @@ impl VM {
             chunk,
             ip: 0,
             stack: Vec::new(),
+            globals: HashMap::new(),
         }
     }
 
@@ -57,8 +61,7 @@ impl VM {
         let (op, lineno) = self.next_op_and_advance();
         match op {
             Op::Return => match self.pop() {
-                Some(v) => {
-                    v.print();
+                Some(_) => {
                     return Ok(());
                 }
                 None => {
@@ -93,16 +96,12 @@ impl VM {
                 let top = self.pop().unwrap();
                 let second = self.pop().unwrap();
 
-                let maybe_b = top.extract_number();
-                let maybe_a = second.extract_number();
-
-                match (maybe_a, maybe_b) {
-                    (Some(a), Some(b)) => {
-                        self.stack.push(Value::Number(a + b));
-                    },
+                match (&second, &top) {
+                    (Value::Number(a), Value::Number(b)) => self.push(Value::Number(a + b)),
+                    (Value::String(a), Value::String(b)) => self.push(Value::String(a.to_owned() + b)),
                     _ => {
                         return Err(InterpreterError::Runtime(format!(
-                            "invalid operand to binary op add. Expected number + number, found {:?} + {:?} at line {}",
+                            "invalid operand to binary op add. Expected `Number + Number` or `String + String`, found `{:?} + {:?}` at line {}",
                             value::type_of(&top), value::type_of(&second), lineno
                         )))
                     }
@@ -222,6 +221,10 @@ impl VM {
                         )))
                     }
                 }
+            }
+            Op::Print => {
+                let value = self.pop().unwrap();
+                value.print();
             }
         }
 
