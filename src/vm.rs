@@ -120,7 +120,7 @@ impl VM {
                     },
                     _ => {
                         return Err(InterpreterError::Runtime(format!(
-                            "invalid operand to binary op subtract. Expected number + number, found {:?} + {:?} at line {}",
+                            "invalid operand to binary op subtract. Expected number - number, found {:?} - {:?} at line {}",
                             value::type_of(&top), value::type_of(&second), lineno
                         )))
                     }
@@ -139,7 +139,7 @@ impl VM {
                     },
                     _ => {
                         return Err(InterpreterError::Runtime(format!(
-                            "invalid operand to binary op multiply. Expected number * number, found {:?} + {:?} at line {}",
+                            "invalid operand to binary op multiply. Expected number * number, found {:?} * {:?} at line {}",
                             value::type_of(&top), value::type_of(&second), lineno
                         )))
                     }
@@ -158,7 +158,7 @@ impl VM {
                     },
                     _ => {
                         return Err(InterpreterError::Runtime(format!(
-                            "invalid operand to binary op divide. Expected number * number, found {:?} + {:?} at line {}",
+                            "invalid operand to binary op divide. Expected number / number, found {:?} / {:?} at line {}",
                             value::type_of(&top), value::type_of(&second), lineno
                         )))
                     }
@@ -228,6 +228,38 @@ impl VM {
             }
             Op::Pop => {
                 self.pop();
+            }
+            Op::DefineGlobal(offset) => {
+                let variable_name = self.get_constant(&offset).extract_string().unwrap();
+                self.globals.insert(variable_name, self.peek().clone());
+            }
+            Op::GetGlobal(offset) => {
+                let variable_name = self.get_constant(&offset).extract_string().unwrap();
+                let value = self.globals.get(&variable_name);
+                match value {
+                    Some(v) => {
+                        let value = v.clone();
+                        self.push(value);
+                    }
+                    None => {
+                        return Err(InterpreterError::Runtime(format!(
+                            "undefined variable `{}`",
+                            variable_name
+                        )))
+                    }
+                }
+            }
+            Op::SetGlobal(offset) => {
+                let variable_name = self.get_constant(&offset).extract_string().unwrap();
+
+                if !self.globals.contains_key(&variable_name) {
+                    return Err(InterpreterError::Runtime(format!(
+                        "undefined variable `{}`",
+                        variable_name
+                    )));
+                } else {
+                    self.globals.insert(variable_name, self.peek().clone());
+                }
             }
         }
 

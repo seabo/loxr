@@ -1,2 +1,5 @@
-print 12 + "hello"
-print 13 + 22;
+var breakfast = "beignets";
+var beverage = "cafe au lait";
+breakfast = "beignets with " + beverage;
+
+print breakfast;

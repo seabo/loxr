@@ -1,11 +1,4 @@
 #V2
-this is a repl
-12 + 13.4
-123.456 * 654.321
--nil
--12
--true
-12 + j
 12 + 12
 true and true
 -true
@@ -99,3 +92,10 @@ print "hello";
 print "hello" + "world";
 12 + 34
 12 + 34;
+var x = 13;
+var y = 14;
+x + y;
+var hello = "hello ,"; var world = "world!"; print hello + world;
+var hello = "hello, "; var world = "world!"; print hello + world;
+a * b = c + d
+a * b = c + d;

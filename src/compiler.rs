@@ -151,11 +151,47 @@ impl Parser<'_> {
     }
 
     fn declaration(&mut self) {
-        self.statement();
+        if self.matches(TokenType::Var) {
+            self.var_declaration();
+        } else {
+            self.statement();
+        }
 
         if self.panic_mode {
             self.synchronize();
         }
+    }
+
+    fn var_declaration(&mut self) {
+        let global = self.parse_variable("expect variable name".to_string());
+
+        if self.matches(TokenType::Equal) {
+            self.expression();
+        } else {
+            self.emit_byte(Op::Nil);
+        }
+
+        self.consume(
+            TokenType::Semicolon,
+            "expect `;` after variable declaration".to_string(),
+        );
+
+        self.define_variable(global);
+    }
+
+    fn parse_variable(&mut self, err: String) -> usize {
+        self.consume(TokenType::Identifier, err);
+        let tok = self.previous;
+        return self.identifier_constant(tok);
+    }
+
+    fn identifier_constant(&mut self, name: Token) -> usize {
+        let variable_name = self.scanner.literal(name.start, name.length);
+        return self.chunk.add_constant(Constant::String(variable_name));
+    }
+
+    fn define_variable(&mut self, global: usize) {
+        self.emit_byte(Op::DefineGlobal(global));
     }
 
     fn statement(&mut self) {
@@ -274,17 +310,33 @@ impl Parser<'_> {
         }
     }
 
+    fn variable(&mut self, can_assign: bool) {
+        self.named_variable(self.previous, can_assign);
+    }
+
+    fn named_variable(&mut self, name: Token, can_assign: bool) {
+        let arg = self.identifier_constant(name);
+
+        if can_assign && self.matches(TokenType::Equal) {
+            self.expression();
+            self.emit_byte(Op::SetGlobal(arg));
+        } else {
+            self.emit_byte(Op::GetGlobal(arg));
+        }
+    }
+
     fn parse_precedence(&mut self, precedence: Precedence) {
         self.advance();
 
         let prefix_rule = get_rule(self.previous.ty).prefix;
+        let can_assign = precedence <= Precedence::Assignment;
 
         match prefix_rule {
             None => {
                 self.report_error("expected expression".to_string());
             }
             Some(parse_fn) => {
-                self.apply_parse_fn(parse_fn);
+                self.apply_parse_fn(parse_fn, can_assign);
             }
         }
 
@@ -295,11 +347,15 @@ impl Parser<'_> {
                 None => {
                     self.report_error("no infix rule found".to_string());
                 }
-                Some(infix_fn) => self.apply_parse_fn(infix_fn),
+                Some(infix_fn) => self.apply_parse_fn(infix_fn, false),
             }
         }
+
+        if can_assign && self.matches(TokenType::Equal) {
+            self.report_error("invalid assignment target".to_string());
+        }
     }
-    fn apply_parse_fn(&mut self, parse_fn: ParseFn) {
+    fn apply_parse_fn(&mut self, parse_fn: ParseFn, can_assign: bool) {
         match parse_fn {
             ParseFn::Grouping => self.grouping(),
             ParseFn::Unary => self.unary(),
@@ -307,7 +363,7 @@ impl Parser<'_> {
             ParseFn::Number => self.number(),
             ParseFn::Literal => self.literal(),
             ParseFn::String => self.string(),
-            // ParseFn::Variable => self.variable(),
+            ParseFn::Variable => self.variable(can_assign),
             // ParseFn::And => self.and(),
             // ParseFn::Or => self.or(),
             // ParseFn::Call => self.call(),

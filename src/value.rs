@@ -27,6 +27,13 @@ impl Value {
             _ => None,
         }
     }
+
+    pub fn extract_string(&self) -> Option<String> {
+        match self {
+            Value::String(s) => Some(s.clone()),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for Value {

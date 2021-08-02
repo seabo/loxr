@@ -23,6 +23,9 @@ pub enum Op {
     Less,
     Print,
     Pop,
+    DefineGlobal(usize),
+    GetGlobal(usize),
+    SetGlobal(usize),
 }
 
 #[derive(Debug, Clone)]

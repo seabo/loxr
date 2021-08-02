@@ -24,6 +24,19 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
             Op::Less => "OP_LESS".to_string(),
             Op::Print => "OP_PRINT".to_string(),
             Op::Pop => "OP_POP".to_string(),
+            Op::DefineGlobal(offset) => {
+                format!(
+                    "OP_DEFINE_GLOBAL {} ({})",
+                    offset,
+                    chunk.get_constant(offset)
+                )
+            }
+            Op::GetGlobal(offset) => {
+                format!("OP_GET_GLOBAL {} ({})", offset, chunk.get_constant(offset))
+            }
+            Op::SetGlobal(offset) => {
+                format!("OP_SET_GLOBAL {} ({})", offset, chunk.get_constant(offset))
+            }
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }
