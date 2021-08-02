@@ -152,6 +152,10 @@ impl Parser<'_> {
 
     fn declaration(&mut self) {
         self.statement();
+
+        if self.panic_mode {
+            self.synchronize();
+        }
     }
 
     fn statement(&mut self) {
@@ -336,6 +340,29 @@ impl Parser<'_> {
         print!("{: >1$}", "", cmp::max(1, error_token.col as usize) - 1);
         println!("{:^<1$}", Yellow.bold().paint("^"), error_token.length);
         println!("");
+    }
+    fn synchronize(&mut self) {
+        self.panic_mode = false;
+
+        while self.current.ty != TokenType::Eof {
+            if self.previous.ty == TokenType::Semicolon {
+                return;
+            }
+
+            match self.current.ty {
+                TokenType::Class => return,
+                TokenType::Fun => return,
+                TokenType::Var => return,
+                TokenType::For => return,
+                TokenType::If => return,
+                TokenType::While => return,
+                TokenType::Print => return,
+                TokenType::Return => return,
+                _ => {}
+            }
+
+            self.advance();
+        }
     }
 }
 

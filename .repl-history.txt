@@ -1,6 +1,4 @@
 #V2
-179494711587012870000000000000000 / 2346729874691847
-stack overflow
 this is a repl
 12 + 13.4
 123.456 * 654.321
@@ -99,3 +97,5 @@ print 13 + 24
 print 13 + 24;
 print "hello";
 print "hello" + "world";
+12 + 34
+12 + 34;

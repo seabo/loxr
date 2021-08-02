@@ -1,2 +1,2 @@
-print 12 + 32;
+print 12 + "hello"
 print 13 + 22;
