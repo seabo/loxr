@@ -126,6 +126,11 @@ impl Parser<'_> {
         self.emit_byte(Op::Constant(ptr));
     }
 
+    fn emit_string_constant(&mut self, str: String) {
+        let ptr = self.chunk.add_constant(Constant::String(str));
+        self.emit_byte(Op::Constant(ptr));
+    }
+
     fn end_compilation(&mut self) {
         self.emit_return();
     }
@@ -210,6 +215,23 @@ impl Parser<'_> {
         }
     }
 
+    fn string(&mut self) {
+        let tok = self.previous;
+
+        match tok.ty {
+            TokenType::String => {
+                let str = self.scanner.literal(tok.start + 1, tok.length - 2);
+                self.emit_string_constant(str);
+            }
+            _ => {
+                self.report_error(format!(
+                    "expected string at line {}, col {}",
+                    tok.line, tok.col
+                ));
+            }
+        }
+    }
+
     fn parse_precedence(&mut self, precedence: Precedence) {
         self.advance();
 
@@ -242,7 +264,7 @@ impl Parser<'_> {
             ParseFn::Binary => self.binary(),
             ParseFn::Number => self.number(),
             ParseFn::Literal => self.literal(),
-            // ParseFn::String => self.string(),
+            ParseFn::String => self.string(),
             // ParseFn::Variable => self.variable(),
             // ParseFn::And => self.and(),
             // ParseFn::Or => self.or(),

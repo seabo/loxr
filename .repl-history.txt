@@ -79,3 +79,18 @@ true == !false
 true == !false
 100 * 100 * 100 * 100
 123456789 * 123456789 / 123456789
+12+13*14
+"string"
+4 "a string"
+"a string"
+13+12
+4 + "a string"
+print 4;
+print 12 + 13
+"hello"
+"this is fucking epic"
+"I CAN WRITE STRINGS!!!!!!!!!!!!!"
+4 == 3
+4 == 4
+"a" == "a"
+"what" == "why"

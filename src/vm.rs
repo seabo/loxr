@@ -248,7 +248,8 @@ impl VM {
         let constant = self.chunk.get_constant(&offset);
 
         match constant {
-            Constant::Number(n) => Value::Number(n),
+            Constant::Number(n) => Value::Number(*n),
+            Constant::String(str) => Value::String(str.to_string()),
         }
     }
 

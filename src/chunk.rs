@@ -40,15 +40,17 @@ impl fmt::Display for Lineno {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Constant {
     Number(f64),
+    String(String),
 }
 
 impl fmt::Display for Constant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Constant::Number(n) => write!(f, "{}", n),
+            Constant::String(str) => write!(f, "{}", str),
         }
     }
 }
@@ -77,8 +79,8 @@ impl Chunk {
         }
     }
 
-    pub fn get_constant(&self, offset: &usize) -> Constant {
-        self.constants[*offset]
+    pub fn get_constant(&self, offset: &usize) -> &Constant {
+        &self.constants[*offset]
     }
 }
 

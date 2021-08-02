@@ -5,6 +5,7 @@ pub enum Value {
     Number(f64),
     Nil,
     Bool(bool),
+    String(String),
 }
 
 #[allow(dead_code)]
@@ -33,7 +34,8 @@ impl fmt::Display for Value {
         match self {
             Value::Number(n) => write!(f, "{}", n),
             Value::Nil => write!(f, "nil"),
-            Value::Bool(bool) => write!(f, "{}", bool),
+            Value::Bool(b) => write!(f, "{}", b),
+            Value::String(str) => write!(f, "{}", str),
         }
     }
 }
@@ -43,6 +45,7 @@ pub enum Type {
     Number,
     Nil,
     Bool,
+    String,
 }
 
 pub fn type_of(value: &Value) -> Type {
@@ -50,6 +53,7 @@ pub fn type_of(value: &Value) -> Type {
         Value::Number(_) => Type::Number,
         Value::Nil => Type::Nil,
         Value::Bool(_) => Type::Bool,
+        Value::String(_) => Type::String,
     }
 }
 
@@ -58,6 +62,7 @@ pub fn is_falsey(value: &Value) -> bool {
         Value::Nil => true,
         Value::Bool(b) => *b,
         Value::Number(n) => *n == 0.0,
+        Value::String(_) => false,
     }
 }
 
@@ -66,6 +71,7 @@ pub fn values_equal(value1: &Value, value2: &Value) -> bool {
         (Value::Number(n1), Value::Number(n2)) => n1 == n2,
         (Value::Nil, Value::Nil) => true,
         (Value::Bool(b1), Value::Bool(b2)) => b1 == b2,
+        (Value::String(str1), Value::String(str2)) => str1 == str2,
         _ => false,
     }
 }
