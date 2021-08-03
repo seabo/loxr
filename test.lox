@@ -1,15 +1,5 @@
-{
-    var x = "hello";
-    var y = " world!";
+var a = "hello";
 
-    {
-        var z = "nice one";
-        print x + y + " !!!!! " + z;
-    }
+var b = ", world!";
 
-    print x;
-}
-
-var global = "global_value_2";
-
-print global;
+print a + b;

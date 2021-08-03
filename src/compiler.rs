@@ -182,7 +182,13 @@ impl Parser<'_> {
         self.emit_byte(Op::Constant(ptr));
     }
 
-    fn end_compilation(&mut self) {}
+    fn end_compilation(self) -> Result<Chunk, String> {
+        if self.had_error {
+            return Err("compilation error".to_string());
+        } else {
+            return Ok(self.chunk);
+        }
+    }
 
     fn expression(&mut self) {
         self.parse_precedence(Precedence::Assignment);
@@ -260,10 +266,7 @@ impl Parser<'_> {
             self.report_error("too many local variables".to_string());
         }
 
-        self.compiler.locals[self.compiler.local_count] = Local {
-            name,
-            depth: self.compiler.scope_depth,
-        };
+        self.compiler.locals[self.compiler.local_count] = Local { name, depth: -1 };
 
         self.compiler.local_count += 1;
     }
@@ -283,10 +286,15 @@ impl Parser<'_> {
 
     fn define_variable(&mut self, global: usize) {
         if self.compiler.scope_depth > 0 {
+            self.mark_initialised();
             return;
         }
 
         self.emit_byte(Op::DefineGlobal(global));
+    }
+
+    fn mark_initialised(&mut self) {
+        self.compiler.locals[self.compiler.local_count - 1].depth = self.compiler.scope_depth;
     }
 
     fn statement(&mut self) {
@@ -466,6 +474,11 @@ impl Parser<'_> {
             .rev()
         {
             if self.identifiers_equal(&name, &local.name) {
+                if local.depth == -1 {
+                    self.report_error(
+                        "can't read local variable in its own initialiser".to_string(),
+                    );
+                }
                 return i as i64;
             }
         }
@@ -529,6 +542,7 @@ impl Parser<'_> {
             return;
         } else {
             self.panic_mode = true;
+            self.had_error = true;
             self.print_error(msg);
         }
     }
@@ -538,6 +552,7 @@ impl Parser<'_> {
         println!("{}", White.bold().paint(msg));
 
         println!("{}", BrightBlue.paint("   | "));
+        print!("{:<3}", BrightBlue.bold().paint(&self.current.line));
         print!("{:<3}", BrightBlue.paint("| "));
         println!("{}", self.source.lines().nth(error_token.line - 1).unwrap());
         print!("{}", BrightBlue.paint("   | "));
@@ -582,9 +597,7 @@ pub fn compile(source: String) -> Result<Chunk, String> {
         parser.declaration();
     }
 
-    parser.end_compilation();
-
-    Ok(parser.chunk)
+    parser.end_compilation()
 }
 
 fn next_precedence(precedence: Precedence) -> Precedence {
