@@ -22,6 +22,38 @@ enum Precedence {
     Primary,
 }
 
+#[derive(Debug)]
+pub struct Compiler {
+    locals: [Local; u8::MAX as usize],
+    local_count: usize,
+    scope_depth: i64,
+}
+
+impl Compiler {
+    fn new() -> Self {
+        Compiler {
+            locals: [Local {
+                name: Token {
+                    ty: TokenType::Init,
+                    col: -1,
+                    start: 0,
+                    length: 0,
+                    line: 0,
+                },
+                depth: 0,
+            }; u8::MAX as usize],
+            local_count: 0,
+            scope_depth: 0,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Local {
+    name: Token,
+    depth: i64,
+}
+
 #[derive(Debug, Copy, Clone)]
 enum ParseFn {
     Grouping,
@@ -53,13 +85,18 @@ pub struct Parser<'a> {
     current: Token,
     previous: Token,
     scanner: &'a mut Scanner,
+    compiler: &'a mut Compiler,
     source: String,
     had_error: bool,
     panic_mode: bool,
 }
 
 impl Parser<'_> {
-    pub fn new(scanner: &mut Scanner, source: String) -> Parser {
+    pub fn new<'a>(
+        scanner: &'a mut Scanner,
+        compiler: &'a mut Compiler,
+        source: String,
+    ) -> Parser<'a> {
         Parser {
             chunk: Chunk::new(),
             current: Token {
@@ -77,6 +114,7 @@ impl Parser<'_> {
                 line: 0,
             },
             scanner,
+            compiler,
             source,
             had_error: false,
             panic_mode: false,
@@ -181,8 +219,53 @@ impl Parser<'_> {
 
     fn parse_variable(&mut self, err: String) -> usize {
         self.consume(TokenType::Identifier, err);
-        let tok = self.previous;
-        return self.identifier_constant(tok);
+        self.declare_variable();
+        if self.compiler.scope_depth > 0 {
+            return 0;
+        }
+
+        return self.identifier_constant(self.previous);
+    }
+
+    fn declare_variable(&mut self) {
+        if self.compiler.scope_depth == 0 {
+            return;
+        }
+
+        let name = self.previous;
+
+        if self.compiler.local_count != 0 {
+            for local in self.compiler.locals[0..self.compiler.local_count]
+                .iter()
+                .rev()
+            {
+                if local.depth != -1 && local.depth < self.compiler.scope_depth {
+                    break;
+                }
+
+                if self.identifiers_equal(&name, &local.name) {
+                    self.report_error(format!(
+                        "already a variable with name `{}` in this scope",
+                        self.scanner.literal(name.start, name.length)
+                    ));
+                    break;
+                }
+            }
+        }
+        self.add_local(name);
+    }
+
+    fn add_local(&mut self, name: Token) {
+        if self.compiler.local_count == u8::MAX as usize {
+            self.report_error("too many local variables".to_string());
+        }
+
+        self.compiler.locals[self.compiler.local_count] = Local {
+            name,
+            depth: self.compiler.scope_depth,
+        };
+
+        self.compiler.local_count += 1;
     }
 
     fn identifier_constant(&mut self, name: Token) -> usize {
@@ -190,15 +273,54 @@ impl Parser<'_> {
         return self.chunk.add_constant(Constant::String(variable_name));
     }
 
+    fn identifiers_equal(&self, a: &Token, b: &Token) -> bool {
+        if a.length != b.length {
+            return false;
+        }
+
+        return self.scanner.literal(a.start, a.length) == self.scanner.literal(b.start, b.length);
+    }
+
     fn define_variable(&mut self, global: usize) {
+        if self.compiler.scope_depth > 0 {
+            return;
+        }
+
         self.emit_byte(Op::DefineGlobal(global));
     }
 
     fn statement(&mut self) {
         if self.matches(TokenType::Print) {
             self.print_statement();
+        } else if self.matches(TokenType::LeftBrace) {
+            self.begin_scope();
+            self.block();
+            self.end_scope();
         } else {
             self.expression_statement();
+        }
+    }
+
+    fn block(&mut self) {
+        while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
+            self.declaration();
+        }
+
+        self.consume(TokenType::RightBrace, "expect `}` after block".to_string());
+    }
+
+    fn begin_scope(&mut self) {
+        self.compiler.scope_depth += 1;
+    }
+
+    fn end_scope(&mut self) {
+        self.compiler.scope_depth -= 1;
+
+        while self.compiler.local_count > 0
+            && self.compiler.locals[self.compiler.local_count - 1].depth > self.compiler.scope_depth
+        {
+            self.emit_byte(Op::Pop);
+            self.compiler.local_count -= 1;
         }
     }
 
@@ -315,14 +437,40 @@ impl Parser<'_> {
     }
 
     fn named_variable(&mut self, name: Token, can_assign: bool) {
-        let arg = self.identifier_constant(name);
+        let arg = self.resolve_local(name);
+
+        let get_op: Op;
+        let set_op: Op;
+
+        if arg != -1 {
+            get_op = Op::GetLocal(arg as usize);
+            set_op = Op::SetLocal(arg as usize);
+        } else {
+            let arg = self.identifier_constant(name);
+            get_op = Op::GetGlobal(arg);
+            set_op = Op::SetGlobal(arg);
+        }
 
         if can_assign && self.matches(TokenType::Equal) {
             self.expression();
-            self.emit_byte(Op::SetGlobal(arg));
+            self.emit_byte(set_op);
         } else {
-            self.emit_byte(Op::GetGlobal(arg));
+            self.emit_byte(get_op);
         }
+    }
+
+    fn resolve_local(&mut self, name: Token) -> i64 {
+        for (i, local) in self.compiler.locals[..self.compiler.local_count]
+            .iter()
+            .enumerate()
+            .rev()
+        {
+            if self.identifiers_equal(&name, &local.name) {
+                return i as i64;
+            }
+        }
+
+        -1
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) {
@@ -424,7 +572,8 @@ impl Parser<'_> {
 
 pub fn compile(source: String) -> Result<Chunk, String> {
     let mut scanner = Scanner::new(&source);
-    let mut parser = Parser::new(&mut scanner, source);
+    let mut compiler = Compiler::new();
+    let mut parser = Parser::new(&mut scanner, &mut compiler, source);
 
     parser.advance();
     // parser.expression();

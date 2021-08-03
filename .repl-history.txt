@@ -1,6 +1,4 @@
 #V2
-12 + 12
-true and true
 -true
 -hello
 true
@@ -99,3 +97,5 @@ var hello = "hello ,"; var world = "world!"; print hello + world;
 var hello = "hello, "; var world = "world!"; print hello + world;
 a * b = c + d
 a * b = c + d;
+var c = 14 * 12;
+c

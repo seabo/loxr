@@ -261,6 +261,12 @@ impl VM {
                     self.globals.insert(variable_name, self.peek().clone());
                 }
             }
+            Op::GetLocal(stack_slot) => {
+                self.push(self.stack[stack_slot].clone());
+            }
+            Op::SetLocal(stack_slot) => {
+                self.stack[stack_slot] = self.peek().clone();
+            }
         }
 
         Ok(())

@@ -1,5 +1,15 @@
-var breakfast = "beignets";
-var beverage = "cafe au lait";
-breakfast = "beignets with " + beverage;
+{
+    var x = "hello";
+    var y = " world!";
 
-print breakfast;
+    {
+        var z = "nice one";
+        print x + y + " !!!!! " + z;
+    }
+
+    print x;
+}
+
+var global = "global_value_2";
+
+print global;
