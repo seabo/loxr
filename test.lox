@@ -1,7 +1,6 @@
-if (false or 1) {
-    print "hello";
-} else {
-    print "else";
-}
+var a = 1;
 
-print "nice one";
+while (a < 8) {
+    print "looping...";
+    a = a + 1;
+}

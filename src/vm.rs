@@ -275,6 +275,9 @@ impl VM {
             Op::Jump(offset) => {
                 self.ip = offset;
             }
+            Op::Loop(offset) => {
+                self.ip = offset;
+            }
         }
 
         Ok(())

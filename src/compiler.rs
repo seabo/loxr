@@ -193,6 +193,10 @@ impl Parser<'_> {
             .patch_jump_instruction(current_offset, offset, self.previous.line);
     }
 
+    fn emit_loop(&mut self, offset: usize) {
+        self.emit_byte(Op::Loop(offset));
+    }
+
     fn end_compilation(self) -> Result<Chunk, String> {
         if self.had_error {
             return Err("compilation error".to_string());
@@ -313,6 +317,8 @@ impl Parser<'_> {
             self.print_statement();
         } else if self.matches(TokenType::If) {
             self.if_statement();
+        } else if self.matches(TokenType::While) {
+            self.while_statement();
         } else if self.matches(TokenType::LeftBrace) {
             self.begin_scope();
             self.block();
@@ -374,6 +380,23 @@ impl Parser<'_> {
         }
 
         self.patch_jump(else_jump);
+    }
+
+    fn while_statement(&mut self) {
+        let loop_start = self.chunk.code.len();
+        self.consume(TokenType::LeftParen, "expect `(` after `while`".to_string());
+        self.expression();
+        self.consume(
+            TokenType::RightParen,
+            "expect`)` after while condition".to_string(),
+        );
+
+        let exit_jump = self.emit_jump(Op::JumpIfFalse(0));
+        self.emit_byte(Op::Pop);
+        self.statement();
+        self.emit_loop(loop_start);
+        self.patch_jump(exit_jump);
+        self.emit_byte(Op::Pop);
     }
 
     fn expression_statement(&mut self) {

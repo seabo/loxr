@@ -49,6 +49,9 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
             Op::Jump(offset) => {
                 format!("OP_JUMP to {}", offset)
             }
+            Op::Loop(offset) => {
+                format!("OP_LOOP back to {}", offset)
+            }
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }
