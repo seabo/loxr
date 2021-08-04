@@ -255,6 +255,11 @@ impl Parser<'_> {
 
         let name = self.previous;
 
+        println!(
+            "Here! Declaring variable {}",
+            self.scanner.literal(name.start, name.length)
+        );
+
         if self.compiler.local_count != 0 {
             for local in self.compiler.locals[0..self.compiler.local_count]
                 .iter()
@@ -605,6 +610,7 @@ impl Parser<'_> {
         }
 
         if can_assign && self.matches(TokenType::Equal) {
+            println!("setting variable");
             self.expression();
             self.emit_byte(set_op);
         } else {

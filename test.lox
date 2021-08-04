@@ -1,7 +1,7 @@
 var acc = 1;
 
 for (var n = 10; n > 0; n = n - 1) {
-    print acc;
+    acc = acc * n;
 }
 
 print acc;

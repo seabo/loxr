@@ -231,7 +231,8 @@ impl VM {
             }
             Op::DefineGlobal(offset) => {
                 let variable_name = self.get_constant(&offset).extract_string().unwrap();
-                self.globals.insert(variable_name, self.peek().clone());
+                let val = self.pop().unwrap().clone();
+                self.globals.insert(variable_name, val);
             }
             Op::GetGlobal(offset) => {
                 let variable_name = self.get_constant(&offset).extract_string().unwrap();
