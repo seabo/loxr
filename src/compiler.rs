@@ -360,12 +360,14 @@ impl Parser<'_> {
         );
 
         let then_jump = self.emit_jump(Op::JumpIfFalse(0));
+        self.emit_byte(Op::Pop);
 
         self.statement();
 
         let else_jump = self.emit_jump(Op::Jump(0));
 
         self.patch_jump(then_jump);
+        self.emit_byte(Op::Pop);
 
         if self.matches(TokenType::Else) {
             self.statement();
