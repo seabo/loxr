@@ -1,4 +1,4 @@
-if (1 and 1) {
+if (false or 1) {
     print "hello";
 } else {
     print "else";
