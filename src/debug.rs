@@ -43,6 +43,12 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
             Op::SetLocal(stack_slot) => {
                 format!("OP_SET_LOCAL {}", stack_slot)
             }
+            Op::JumpIfFalse(offset) => {
+                format!("OP_JUMP_IF_FALSE to {}", offset)
+            }
+            Op::Jump(offset) => {
+                format!("OP_JUMP to {}", offset)
+            }
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }

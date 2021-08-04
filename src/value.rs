@@ -67,7 +67,7 @@ pub fn type_of(value: &Value) -> Type {
 pub fn is_falsey(value: &Value) -> bool {
     match value {
         Value::Nil => true,
-        Value::Bool(b) => *b,
+        Value::Bool(b) => !*b,
         Value::Number(n) => *n == 0.0,
         Value::String(_) => false,
     }

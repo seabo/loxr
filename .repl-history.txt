@@ -1,7 +1,4 @@
 #V2
--hello
-true
-12
 12+sd
 12 + 
 12 + true
@@ -99,3 +96,6 @@ a * b = c + d;
 var c = 14 * 12;
 c
 { var a = "outer"; { var a = a; } }
+1.59 * 12
+1.59 * 12;
+print 1.59 * 12;

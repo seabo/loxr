@@ -158,8 +158,8 @@ impl Parser<'_> {
         true
     }
 
-    fn emit_byte(&mut self, byte: Op) {
-        self.chunk.write_chunk(byte, self.previous.line);
+    fn emit_byte(&mut self, byte: Op) -> usize {
+        self.chunk.write_chunk(byte, self.previous.line)
     }
 
     fn emit_bytes(&mut self, byte1: Op, byte2: Op) {
@@ -180,6 +180,17 @@ impl Parser<'_> {
     fn emit_string_constant(&mut self, str: String) {
         let ptr = self.chunk.add_constant(Constant::String(str));
         self.emit_byte(Op::Constant(ptr));
+    }
+
+    fn emit_jump(&mut self, op: Op) -> usize {
+        self.emit_byte(op)
+    }
+
+    fn patch_jump(&mut self, offset: usize) {
+        let current_offset = self.chunk.code.len();
+
+        self.chunk
+            .patch_jump_instruction(current_offset, offset, self.previous.line);
     }
 
     fn end_compilation(self) -> Result<Chunk, String> {
@@ -300,6 +311,8 @@ impl Parser<'_> {
     fn statement(&mut self) {
         if self.matches(TokenType::Print) {
             self.print_statement();
+        } else if self.matches(TokenType::If) {
+            self.if_statement();
         } else if self.matches(TokenType::LeftBrace) {
             self.begin_scope();
             self.block();
@@ -338,6 +351,29 @@ impl Parser<'_> {
         self.emit_byte(Op::Print);
     }
 
+    fn if_statement(&mut self) {
+        self.consume(TokenType::LeftParen, "expect `(` after '`if`".to_string());
+        self.expression();
+        self.consume(
+            TokenType::RightParen,
+            "expect `)` after if statement condition".to_string(),
+        );
+
+        let then_jump = self.emit_jump(Op::JumpIfFalse(0));
+
+        self.statement();
+
+        let else_jump = self.emit_jump(Op::Jump(0));
+
+        self.patch_jump(then_jump);
+
+        if self.matches(TokenType::Else) {
+            self.statement();
+        }
+
+        self.patch_jump(else_jump);
+    }
+
     fn expression_statement(&mut self) {
         self.expression();
         self.consume(
@@ -361,8 +397,12 @@ impl Parser<'_> {
         self.parse_precedence(Precedence::Unary);
 
         match operator_type {
-            TokenType::Minus => self.emit_byte(Op::Negate),
-            TokenType::Bang => self.emit_byte(Op::Not),
+            TokenType::Minus => {
+                self.emit_byte(Op::Negate);
+            }
+            TokenType::Bang => {
+                self.emit_byte(Op::Not);
+            }
             _ => {
                 return;
             }
@@ -376,16 +416,36 @@ impl Parser<'_> {
         self.parse_precedence(next_precedence(rule.precedence));
 
         match operator_type {
-            TokenType::Plus => self.emit_byte(Op::Add),
-            TokenType::Minus => self.emit_byte(Op::Subtract),
-            TokenType::Star => self.emit_byte(Op::Multiply),
-            TokenType::Slash => self.emit_byte(Op::Divide),
-            TokenType::BangEqual => self.emit_bytes(Op::Equal, Op::Not),
-            TokenType::EqualEqual => self.emit_byte(Op::Equal),
-            TokenType::Greater => self.emit_byte(Op::Greater),
-            TokenType::GreaterEqual => self.emit_bytes(Op::Less, Op::Not),
-            TokenType::Less => self.emit_byte(Op::Less),
-            TokenType::LessEqual => self.emit_bytes(Op::Greater, Op::Not),
+            TokenType::Plus => {
+                self.emit_byte(Op::Add);
+            }
+            TokenType::Minus => {
+                self.emit_byte(Op::Subtract);
+            }
+            TokenType::Star => {
+                self.emit_byte(Op::Multiply);
+            }
+            TokenType::Slash => {
+                self.emit_byte(Op::Divide);
+            }
+            TokenType::BangEqual => {
+                self.emit_bytes(Op::Equal, Op::Not);
+            }
+            TokenType::EqualEqual => {
+                self.emit_byte(Op::Equal);
+            }
+            TokenType::Greater => {
+                self.emit_byte(Op::Greater);
+            }
+            TokenType::GreaterEqual => {
+                self.emit_bytes(Op::Less, Op::Not);
+            }
+            TokenType::Less => {
+                self.emit_byte(Op::Less);
+            }
+            TokenType::LessEqual => {
+                self.emit_bytes(Op::Greater, Op::Not);
+            }
             _ => {}
         }
     }
@@ -414,9 +474,15 @@ impl Parser<'_> {
         let tok = self.previous;
 
         match tok.ty {
-            TokenType::False => self.emit_byte(Op::False),
-            TokenType::True => self.emit_byte(Op::True),
-            TokenType::Nil => self.emit_byte(Op::Nil),
+            TokenType::False => {
+                self.emit_byte(Op::False);
+            }
+            TokenType::True => {
+                self.emit_byte(Op::True);
+            }
+            TokenType::Nil => {
+                self.emit_byte(Op::Nil);
+            }
             _ => self.report_error(format!(
                 "this code should have been unreachable. this is likely an bug in the interpreter"
             )),

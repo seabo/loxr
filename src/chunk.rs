@@ -28,6 +28,8 @@ pub enum Op {
     SetGlobal(usize),
     GetLocal(usize),
     SetLocal(usize),
+    JumpIfFalse(usize),
+    Jump(usize),
 }
 
 #[derive(Debug, Clone)]
@@ -69,8 +71,23 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn write_chunk(&mut self, byte: Op, lineno: usize) {
+    pub fn write_chunk(&mut self, byte: Op, lineno: usize) -> usize {
         self.code.push((byte, Lineno::new(lineno)));
+        self.code.len() - 1
+    }
+
+    pub fn patch_jump_instruction(&mut self, current_offset: usize, offset: usize, lineno: usize) {
+        match self.code[offset].0 {
+            Op::JumpIfFalse(_) => {
+                self.code[offset] = (Op::JumpIfFalse(current_offset), Lineno::new(lineno));
+            }
+            Op::Jump(_) => {
+                self.code[offset] = (Op::Jump(current_offset), Lineno::new(lineno));
+            }
+            _ => {
+                return;
+            }
+        }
     }
 
     pub fn add_constant(&mut self, value: Constant) -> usize {

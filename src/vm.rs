@@ -267,6 +267,14 @@ impl VM {
             Op::SetLocal(stack_slot) => {
                 self.stack[stack_slot] = self.peek().clone();
             }
+            Op::JumpIfFalse(offset) => {
+                if value::is_falsey(self.peek()) {
+                    self.ip = offset;
+                }
+            }
+            Op::Jump(offset) => {
+                self.ip = offset;
+            }
         }
 
         Ok(())
