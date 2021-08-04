@@ -554,6 +554,13 @@ impl Parser<'_> {
         -1
     }
 
+    fn and(&mut self) {
+        let end_jump = self.emit_jump(Op::JumpIfFalse(0));
+        self.emit_byte(Op::Pop);
+        self.parse_precedence(Precedence::And);
+        self.patch_jump(end_jump);
+    }
+
     fn parse_precedence(&mut self, precedence: Precedence) {
         self.advance();
 
@@ -593,7 +600,7 @@ impl Parser<'_> {
             ParseFn::Literal => self.literal(),
             ParseFn::String => self.string(),
             ParseFn::Variable => self.variable(can_assign),
-            // ParseFn::And => self.and(),
+            ParseFn::And => self.and(),
             // ParseFn::Or => self.or(),
             // ParseFn::Call => self.call(),
             // ParseFn::Dot => self.dot(),
