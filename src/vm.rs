@@ -171,7 +171,7 @@ impl VM {
                 let top = self.pop();
 
                 match top {
-                    Some(v) => self.push(Value::Bool(!value::is_falsey(&v))),
+                    Some(v) => self.push(Value::Bool(value::is_falsey(&v))),
                     _ => {
                         return Err(InterpreterError::Runtime(format!(
                             "invalid operand to unary op not"
