@@ -1,3 +1,4 @@
+use crate::builtins;
 use crate::chunk::{Constant, Function, Lineno, Op};
 use crate::compiler;
 use crate::debug;
@@ -37,11 +38,22 @@ pub struct VM {
 
 impl VM {
     pub fn new() -> VM {
-        VM {
+        let mut vm = VM {
             frames: Vec::with_capacity(64),
             stack: Vec::with_capacity(256),
             globals: HashMap::new(),
-        }
+        };
+
+        vm.globals.insert(
+            String::from("clock"),
+            Value::NativeFunction(value::NativeFunction {
+                arity: 0,
+                name: String::from("clock"),
+                func: builtins::clock,
+            }),
+        );
+
+        vm
     }
 
     pub fn frame(&self) -> &CallFrame {
@@ -368,9 +380,45 @@ impl VM {
                 self.prepare_call(func, arg_count)?;
                 Ok(())
             }
+            Value::NativeFunction(func) => {
+                self.call_native_func(func, arg_count)?;
+                Ok(())
+            }
             _ => Err(InterpreterError::Runtime(format!(
                 "attempted to call non-callable value of type {:?}",
                 value::type_of(&val_to_call)
+            ))),
+        }
+    }
+
+    fn call_native_func(
+        &mut self,
+        native_func: value::NativeFunction,
+        arg_count: u8,
+    ) -> Result<(), InterpreterError> {
+        if arg_count != native_func.arity {
+            return Err(InterpreterError::Runtime(format!(
+                "native function {} expectedf {} arguments but found {}",
+                native_func.name, native_func.arity, arg_count
+            )));
+        }
+
+        let mut args: Vec<Value> = Vec::new();
+        for _ in 0..arg_count {
+            args.push(self.pop().unwrap());
+        }
+        args.reverse();
+        self.pop();
+        let res = (native_func.func)(self, &args);
+
+        match res {
+            Ok(result) => {
+                self.stack.push(result);
+                Ok(())
+            }
+            Err(err) => Err(InterpreterError::Runtime(format!(
+                "when calling {}: {}",
+                native_func.name, err
             ))),
         }
     }

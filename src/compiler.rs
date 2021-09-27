@@ -489,6 +489,9 @@ impl Parser<'_> {
     }
 
     fn return_statement(&mut self) {
+        if matches!(self.current_compiler().function_type, FunctionType::Script) {
+            self.report_error("can't return from top-level code".to_string());
+        }
         if self.matches(TokenType::Semicolon) {
             self.emit_return();
         } else {

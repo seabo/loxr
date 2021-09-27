@@ -4,6 +4,7 @@ extern crate term_painter;
 use clap::{App, Arg};
 use std::fs;
 
+mod builtins;
 mod chunk;
 mod compiler;
 mod debug;

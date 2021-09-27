@@ -3,3 +3,5 @@ fun sum(a, b, c) {
 }
 
 print 4 + sum(1, 2, 3 + 4);
+
+return "what?!"

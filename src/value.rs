@@ -1,14 +1,23 @@
 use std::fmt;
 
 use crate::chunk::Function;
+use crate::vm;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
+pub struct NativeFunction {
+    pub arity: u8,
+    pub name: String,
+    pub func: fn(&mut vm::VM, &[Value]) -> Result<Value, String>,
+}
+
+#[derive(Clone)]
 pub enum Value {
     Number(f64),
     Nil,
     Bool(bool),
     String(String),
     Function(Function),
+    NativeFunction(NativeFunction),
 }
 
 #[allow(dead_code)]
@@ -55,6 +64,7 @@ impl fmt::Display for Value {
                     String::from(&func.name)
                 }
             ),
+            Value::NativeFunction(func) => write!(f, "<native:{}>", String::from(&func.name)),
         }
     }
 }
@@ -66,6 +76,7 @@ pub enum Type {
     Bool,
     String,
     Function,
+    NativeFunction,
 }
 
 pub fn type_of(value: &Value) -> Type {
@@ -75,6 +86,7 @@ pub fn type_of(value: &Value) -> Type {
         Value::Bool(_) => Type::Bool,
         Value::String(_) => Type::String,
         Value::Function(_) => Type::Function,
+        Value::NativeFunction(_) => Type::NativeFunction,
     }
 }
 
@@ -85,6 +97,7 @@ pub fn is_falsey(value: &Value) -> bool {
         Value::Number(n) => *n == 0.0,
         Value::String(_) => false,
         Value::Function(_) => false,
+        Value::NativeFunction(_) => false,
     }
 }
 
