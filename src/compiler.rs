@@ -95,7 +95,7 @@ struct ParseRule {
 
 #[derive(Debug)]
 pub struct Parser<'a> {
-    chunk: Chunk,
+    // chunk: Chunk,
     current: Token,
     previous: Token,
     scanner: &'a mut Scanner,
@@ -112,7 +112,7 @@ impl Parser<'_> {
         source: String,
     ) -> Parser<'a> {
         Parser {
-            chunk: Chunk::new(),
+            // chunk: Chunk::new(),
             current: Token {
                 ty: TokenType::Init,
                 col: -1,
