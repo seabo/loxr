@@ -321,6 +321,7 @@ impl VM {
             Op::Loop(offset) => {
                 self.frame_mut().ip = offset;
             }
+            Op::Call(arg_count) => {}
         }
 
         Ok(())

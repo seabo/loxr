@@ -52,6 +52,9 @@ fn disassemble_code(chunk: &Chunk) -> Vec<String> {
             Op::Loop(offset) => {
                 format!("OP_LOOP back to {}", offset)
             }
+            Op::Call(arg_count) => {
+                format!("OP_CALL with {} arguments", arg_count)
+            }
         };
         lines.push(format!("{0: <04} {1: <50}", idx, formatted_op));
     }
