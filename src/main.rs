@@ -71,14 +71,14 @@ fn main() {
             repl::repl();
             return ();
         } else {
-            let maybe_chunk = compiler::compile(input.clone());
-            match maybe_chunk {
-                Ok(chunk) => {
+            let maybe_function = compiler::compile(input.clone());
+            match maybe_function {
+                Ok(function) => {
                     if matches.is_present(BYTECODE) {
-                        println!("{}", chunk);
+                        println!("{}", function);
                     }
-                    let mut vm = vm::VM::new(chunk);
-                    let _res = vm.interpret();
+                    let mut vm = vm::VM::new();
+                    let _res = vm.interpret(function);
                 }
                 Err(err) => {
                     println!("{}", err);

@@ -1,11 +1,14 @@
 use std::fmt;
 
+use crate::chunk::Function;
+
 #[derive(Clone, Debug)]
 pub enum Value {
     Number(f64),
     Nil,
     Bool(bool),
     String(String),
+    Function(Function),
 }
 
 #[allow(dead_code)]
@@ -43,6 +46,15 @@ impl fmt::Display for Value {
             Value::Nil => write!(f, "nil"),
             Value::Bool(b) => write!(f, "{}", b),
             Value::String(str) => write!(f, "{}", str),
+            Value::Function(func) => write!(
+                f,
+                "<{}>",
+                if func.name == "" {
+                    String::from("<script>")
+                } else {
+                    String::from(&func.name)
+                }
+            ),
         }
     }
 }
@@ -53,6 +65,7 @@ pub enum Type {
     Nil,
     Bool,
     String,
+    Function,
 }
 
 pub fn type_of(value: &Value) -> Type {
@@ -61,6 +74,7 @@ pub fn type_of(value: &Value) -> Type {
         Value::Nil => Type::Nil,
         Value::Bool(_) => Type::Bool,
         Value::String(_) => Type::String,
+        Value::Function(_) => Type::Function,
     }
 }
 
@@ -70,6 +84,7 @@ pub fn is_falsey(value: &Value) -> bool {
         Value::Bool(b) => !*b,
         Value::Number(n) => *n == 0.0,
         Value::String(_) => false,
+        Value::Function(_) => false,
     }
 }
 

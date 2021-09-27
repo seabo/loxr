@@ -51,6 +51,19 @@ impl fmt::Display for Lineno {
 }
 
 #[derive(Debug, Clone)]
+pub struct Function {
+    pub arity: u8,
+    pub chunk: Chunk,
+    pub name: String,
+}
+
+impl fmt::Display for Function {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<{}>", self.name)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Constant {
     Number(f64),
     String(String),

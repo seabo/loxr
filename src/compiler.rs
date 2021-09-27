@@ -3,7 +3,7 @@ use crate::scanner;
 
 use term_painter::{Color::*, ToStyle};
 
-use chunk::{Chunk, Constant, Op};
+use chunk::{Chunk, Constant, Function, Op};
 use scanner::{Scanner, Token, TokenType};
 use std::cmp;
 
@@ -24,14 +24,22 @@ enum Precedence {
 
 #[derive(Debug)]
 pub struct Compiler {
+    function: Function,
+    function_type: FunctionType,
     locals: [Local; u8::MAX as usize],
     local_count: usize,
     scope_depth: i64,
 }
 
 impl Compiler {
-    fn new() -> Self {
+    fn new(function_type: FunctionType) -> Self {
         Compiler {
+            function: Function {
+                arity: 0,
+                chunk: Chunk::new(),
+                name: String::from(""),
+            },
+            function_type: function_type,
             locals: [Local {
                 name: Token {
                     ty: TokenType::Init,
@@ -52,6 +60,12 @@ impl Compiler {
 pub struct Local {
     name: Token,
     depth: i64,
+}
+
+#[derive(Copy, Clone, Debug)]
+enum FunctionType {
+    Function,
+    Script,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -195,14 +209,6 @@ impl Parser<'_> {
 
     fn emit_loop(&mut self, offset: usize) {
         self.emit_byte(Op::Loop(offset));
-    }
-
-    fn end_compilation(self) -> Result<Chunk, String> {
-        if self.had_error {
-            return Err("compilation error".to_string());
-        } else {
-            return Ok(self.chunk);
-        }
     }
 
     fn expression(&mut self) {
@@ -746,19 +752,22 @@ impl Parser<'_> {
     }
 }
 
-pub fn compile(source: String) -> Result<Chunk, String> {
+pub fn compile(source: String) -> Result<Function, String> {
     let mut scanner = Scanner::new(&source);
-    let mut compiler = Compiler::new();
+    let mut compiler = Compiler::new(FunctionType::Script);
     let mut parser = Parser::new(&mut scanner, &mut compiler, source);
 
     parser.advance();
-    // parser.expression();
 
     while !parser.matches(TokenType::Eof) {
         parser.declaration();
     }
 
-    parser.end_compilation()
+    if parser.had_error {
+        Err("compilation error".to_string())
+    } else {
+        Ok(compiler.function)
+    }
 }
 
 fn next_precedence(precedence: Precedence) -> Precedence {

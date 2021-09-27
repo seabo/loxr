@@ -1,4 +1,4 @@
-use crate::chunk::{Chunk, Constant, Lineno, Op};
+use crate::chunk::{Chunk, Constant, Function, Lineno, Op};
 use crate::value;
 use crate::value::Value;
 
@@ -9,24 +9,58 @@ pub enum InterpreterError {
     Runtime(String),
 }
 
-pub struct VM {
-    pub chunk: Chunk,
+pub struct CallFrame {
+    pub function: Function,
     pub ip: usize,
+    pub slot_offset: usize,
+}
+
+impl CallFrame {
+    fn next_op(&self) -> (Op, Lineno) {
+        self.function.chunk.code[self.ip].clone()
+    }
+
+    fn next_op_and_advance(&mut self) -> (Op, Lineno) {
+        let res = self.next_op();
+        self.ip += 1;
+        res
+    }
+}
+
+pub struct VM {
+    pub frames: Vec<CallFrame>,
     pub stack: Vec<Value>,
     pub globals: HashMap<String, Value>,
 }
 
 impl VM {
-    pub fn new(chunk: Chunk) -> VM {
+    pub fn new() -> VM {
         VM {
-            chunk,
-            ip: 0,
-            stack: Vec::new(),
+            frames: Vec::with_capacity(64),
+            stack: Vec::with_capacity(256),
             globals: HashMap::new(),
         }
     }
 
-    pub fn interpret(&mut self) -> Result<(), InterpreterError> {
+    pub fn frame(&self) -> &CallFrame {
+        self.frames.last().unwrap()
+    }
+
+    fn frame_mut(&mut self) -> &mut CallFrame {
+        let frames_len = self.frames.len();
+        &mut self.frames[frames_len - 1]
+    }
+
+    pub fn prepare_interpret(&mut self, function: Function) {
+        self.frames.push(CallFrame {
+            function,
+            ip: 0,
+            slot_offset: 0,
+        });
+    }
+
+    pub fn interpret(&mut self, function: Function) -> Result<(), InterpreterError> {
+        self.prepare_interpret(function);
         self.run()
     }
 
@@ -44,17 +78,15 @@ impl VM {
     }
 
     pub fn next_op(&self) -> (Op, Lineno) {
-        self.chunk.code[self.ip].clone()
+        self.frame().next_op()
     }
 
     pub fn next_op_and_advance(&mut self) -> (Op, Lineno) {
-        let res = self.next_op();
-        self.ip += 1;
-        res
+        self.frame_mut().next_op_and_advance()
     }
 
     pub fn is_done(&self) -> bool {
-        self.ip >= self.chunk.code.len()
+        self.frames.is_empty() || self.frame().ip >= self.frame().function.chunk.code.len()
     }
 
     pub fn step(&mut self) -> Result<(), InterpreterError> {
@@ -270,14 +302,14 @@ impl VM {
             }
             Op::JumpIfFalse(offset) => {
                 if value::is_falsey(self.peek()) {
-                    self.ip = offset;
+                    self.frame_mut().ip = offset;
                 }
             }
             Op::Jump(offset) => {
-                self.ip = offset;
+                self.frame_mut().ip = offset;
             }
             Op::Loop(offset) => {
-                self.ip = offset;
+                self.frame_mut().ip = offset;
             }
         }
 
@@ -301,7 +333,7 @@ impl VM {
     }
 
     fn get_constant(&self, offset: &usize) -> Value {
-        let constant = self.chunk.get_constant(&offset);
+        let constant = self.frame().function.chunk.get_constant(&offset);
 
         match constant {
             Constant::Number(n) => Value::Number(*n),
