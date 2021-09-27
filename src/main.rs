@@ -71,20 +71,8 @@ fn main() {
             repl::repl();
             return ();
         } else {
-            let maybe_function = compiler::compile(input.clone());
-            match maybe_function {
-                Ok(function) => {
-                    if matches.is_present(BYTECODE) {
-                        println!("{}", function);
-                    }
-                    let mut vm = vm::VM::new();
-                    let _res = vm.interpret(function);
-                }
-                Err(err) => {
-                    println!("{}", err);
-                    std::process::exit(-1);
-                }
-            }
+            let mut vm = vm::VM::new();
+            let _res = vm.interpret(input);
         }
     } else {
         println!("Error: No file was provided.");

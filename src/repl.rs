@@ -30,14 +30,14 @@ Authors: {} \n\
 }
 
 fn execute_line(line: String) {
-    let maybe_function = compiler::compile(line);
-    match maybe_function {
-        Ok(function) => {
-            let mut vm = vm::VM::new();
-            let _res = vm.interpret(function);
-        }
-        Err(err) => {
-            println!("{}", err);
-        }
-    }
+    // let maybe_function = compiler::compile(line);
+    // match maybe_function {
+    //     Ok(function) => {
+    //         let mut vm = vm::VM::new();
+    //         let _res = vm.interpret(function);
+    //     }
+    //     Err(err) => {
+    //         println!("{}", err);
+    //     }
+    // }
 }

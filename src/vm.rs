@@ -1,4 +1,5 @@
-use crate::chunk::{Chunk, Constant, Function, Lineno, Op};
+use crate::chunk::{Constant, Function, Lineno, Op};
+use crate::compiler;
 use crate::value;
 use crate::value::Value;
 
@@ -59,9 +60,18 @@ impl VM {
         });
     }
 
-    pub fn interpret(&mut self, function: Function) -> Result<(), InterpreterError> {
-        self.prepare_interpret(function);
-        self.run()
+    pub fn interpret(&mut self, source: String) -> Result<(), InterpreterError> {
+        let maybe_function = compiler::compile(source.clone());
+        match maybe_function {
+            Ok(function) => {
+                self.prepare_interpret(function);
+                self.run()
+            }
+            Err(err) => {
+                println!("{}", err);
+                std::process::exit(-1);
+            }
+        }
     }
 
     pub fn run(&mut self) -> Result<(), InterpreterError> {

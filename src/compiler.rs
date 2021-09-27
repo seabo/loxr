@@ -173,7 +173,10 @@ impl Parser<'_> {
     }
 
     fn emit_byte(&mut self, byte: Op) -> usize {
-        self.chunk.write_chunk(byte, self.previous.line)
+        self.compiler
+            .function
+            .chunk
+            .write_chunk(byte, self.previous.line)
     }
 
     fn emit_bytes(&mut self, byte1: Op, byte2: Op) {
@@ -187,12 +190,20 @@ impl Parser<'_> {
     }
 
     fn emit_constant(&mut self, n: f64) {
-        let ptr = self.chunk.add_constant(Constant::Number(n));
+        let ptr = self
+            .compiler
+            .function
+            .chunk
+            .add_constant(Constant::Number(n));
         self.emit_byte(Op::Constant(ptr));
     }
 
     fn emit_string_constant(&mut self, str: String) {
-        let ptr = self.chunk.add_constant(Constant::String(str));
+        let ptr = self
+            .compiler
+            .function
+            .chunk
+            .add_constant(Constant::String(str));
         self.emit_byte(Op::Constant(ptr));
     }
 
@@ -201,10 +212,13 @@ impl Parser<'_> {
     }
 
     fn patch_jump(&mut self, offset: usize) {
-        let current_offset = self.chunk.code.len();
+        let current_offset = self.compiler.function.chunk.code.len();
 
-        self.chunk
-            .patch_jump_instruction(current_offset, offset, self.previous.line);
+        self.compiler.function.chunk.patch_jump_instruction(
+            current_offset,
+            offset,
+            self.previous.line,
+        );
     }
 
     fn emit_loop(&mut self, offset: usize) {
@@ -294,7 +308,11 @@ impl Parser<'_> {
 
     fn identifier_constant(&mut self, name: Token) -> usize {
         let variable_name = self.scanner.literal(name.start, name.length);
-        return self.chunk.add_constant(Constant::String(variable_name));
+        return self
+            .compiler
+            .function
+            .chunk
+            .add_constant(Constant::String(variable_name));
     }
 
     fn identifiers_equal(&self, a: &Token, b: &Token) -> bool {
@@ -376,7 +394,7 @@ impl Parser<'_> {
             self.expression_statement();
         }
 
-        let mut loop_start = self.chunk.code.len();
+        let mut loop_start = self.compiler.function.chunk.code.len();
 
         let mut exit_jump = 0;
         if !self.matches(TokenType::Semicolon) {
@@ -393,7 +411,7 @@ impl Parser<'_> {
 
         if !self.matches(TokenType::RightParen) {
             let body_jump = self.emit_jump(Op::Jump(0));
-            let increment_start = self.chunk.code.len();
+            let increment_start = self.compiler.function.chunk.code.len();
             self.expression();
             self.emit_byte(Op::Pop);
             self.consume(
@@ -443,7 +461,7 @@ impl Parser<'_> {
     }
 
     fn while_statement(&mut self) {
-        let loop_start = self.chunk.code.len();
+        let loop_start = self.compiler.function.chunk.code.len();
         self.consume(TokenType::LeftParen, "expect `(` after `while`".to_string());
         self.expression();
         self.consume(
