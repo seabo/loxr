@@ -199,6 +199,7 @@ impl Parser<'_> {
 
     #[allow(dead_code)]
     fn emit_return(&mut self) {
+        self.emit_byte(Op::Nil);
         self.emit_byte(Op::Return);
     }
 
@@ -402,6 +403,8 @@ impl Parser<'_> {
             self.for_statement();
         } else if self.matches(TokenType::If) {
             self.if_statement();
+        } else if self.matches(TokenType::Return) {
+            self.return_statement();
         } else if self.matches(TokenType::While) {
             self.while_statement();
         } else if self.matches(TokenType::LeftBrace) {
@@ -483,6 +486,19 @@ impl Parser<'_> {
         self.expression();
         self.consume(TokenType::Semicolon, "expect `;` after value".to_string());
         self.emit_byte(Op::Print);
+    }
+
+    fn return_statement(&mut self) {
+        if self.matches(TokenType::Semicolon) {
+            self.emit_return();
+        } else {
+            self.expression();
+            self.consume(
+                TokenType::Semicolon,
+                "expect `;` after return value".to_string(),
+            );
+            self.emit_byte(Op::Return);
+        }
     }
 
     fn for_statement(&mut self) {

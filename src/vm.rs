@@ -1,5 +1,6 @@
 use crate::chunk::{Constant, Function, Lineno, Op};
 use crate::compiler;
+use crate::debug;
 use crate::value;
 use crate::value::Value;
 
@@ -100,18 +101,32 @@ impl VM {
     }
 
     pub fn step(&mut self) -> Result<(), InterpreterError> {
+        // debug::print_stack(&self.stack);
         let (op, lineno) = self.next_op_and_advance();
         match op {
-            Op::Return => match self.pop() {
-                Some(_) => {
-                    return Ok(());
+            Op::Return => {
+                let result = self.pop();
+
+                match result {
+                    Some(return_value) => {
+                        for idx in self.frame().slot_offset..self.stack.len() + 1 {
+                            self.pop();
+                        }
+
+                        self.frames.pop();
+                        if self.frames.len() == 0 {
+                            return Ok(());
+                        }
+
+                        self.push(return_value);
+                    }
+                    None => {
+                        return Err(InterpreterError::Runtime(
+                            "no return value to pop off stack".to_string(),
+                        ))
+                    }
                 }
-                None => {
-                    return Err(InterpreterError::Runtime(
-                        "no return value to pop off stack".to_string(),
-                    ))
-                }
-            },
+            }
             Op::Constant(offset) => {
                 let constant = self.get_constant(&offset);
                 self.push(constant);
@@ -305,10 +320,12 @@ impl VM {
                 }
             }
             Op::GetLocal(stack_slot) => {
-                self.push(self.stack[stack_slot].clone());
+                let slot_offset = self.frame().slot_offset;
+                self.push(self.stack[slot_offset + stack_slot].clone());
             }
             Op::SetLocal(stack_slot) => {
-                self.stack[stack_slot] = self.peek().clone();
+                let slot_offset = self.frame().slot_offset;
+                self.stack[slot_offset + stack_slot] = self.peek().clone();
             }
             Op::JumpIfFalse(offset) => {
                 if value::is_falsey(self.peek()) {
@@ -321,7 +338,9 @@ impl VM {
             Op::Loop(offset) => {
                 self.frame_mut().ip = offset;
             }
-            Op::Call(arg_count) => {}
+            Op::Call(arg_count) => {
+                self.call_value(self.peek_by(arg_count.into()).clone(), arg_count)?;
+            }
         }
 
         Ok(())
@@ -343,6 +362,36 @@ impl VM {
         &self.stack[self.stack.len() - n - 1]
     }
 
+    fn call_value(&mut self, val_to_call: Value, arg_count: u8) -> Result<(), InterpreterError> {
+        match val_to_call {
+            Value::Function(func) => {
+                self.prepare_call(func, arg_count)?;
+                Ok(())
+            }
+            _ => Err(InterpreterError::Runtime(format!(
+                "attempted to call non-callable value of type {:?}",
+                value::type_of(&val_to_call)
+            ))),
+        }
+    }
+
+    fn prepare_call(&mut self, func: Function, arg_count: u8) -> Result<(), InterpreterError> {
+        if arg_count != func.arity {
+            return Err(InterpreterError::Runtime(format!(
+                "expected {} arguments but found {}",
+                func.arity, arg_count
+            )));
+        }
+
+        self.frames.push(CallFrame {
+            function: func,
+            ip: 0,
+            slot_offset: self.stack.len() - usize::from(arg_count),
+        });
+
+        Ok(())
+    }
+
     fn get_constant(&self, offset: &usize) -> Value {
         let constant = self.frame().function.chunk.get_constant(&offset);
 
@@ -357,5 +406,16 @@ impl VM {
         let InterpreterError::Runtime(msg) = err;
         let (_, lineno) = self.next_op();
         println!("error: {} at line: {}", msg, lineno);
+
+        for frame in &self.frames {
+            let func = &frame.function;
+            let (_op, lineno) = &func.chunk.code[frame.ip];
+            print!("[line {}] in ", lineno.value);
+            if func.name == "" {
+                println!("script");
+            } else {
+                println!("{}()", func.name);
+            }
+        }
     }
 }

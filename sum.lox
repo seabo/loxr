@@ -1,5 +1,5 @@
 fun sum(a, b, c) {
-    print a + b + c + d;
+   return a + b + c;
 }
 
-print sum;
+print 4 + sum(1, 2, 3 + 4);

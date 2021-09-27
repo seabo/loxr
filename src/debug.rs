@@ -1,4 +1,5 @@
 use crate::chunk::{Chunk, Op};
+use crate::value;
 
 #[allow(dead_code)]
 fn disassemble_code(chunk: &Chunk) -> Vec<String> {
@@ -83,4 +84,12 @@ pub fn disassemble_chunk(chunk: &Chunk, name: &str) -> String {
     lines.push("\n========================".to_string());
 
     lines.join("\n")
+}
+
+pub fn print_stack(stack: &Vec<value::Value>) {
+    print!("STACK: ");
+    for i in stack {
+        print!("{} ", i);
+    }
+    print!("\n");
 }
