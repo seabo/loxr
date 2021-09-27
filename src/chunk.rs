@@ -71,6 +71,7 @@ impl fmt::Display for Function {
 pub enum Constant {
     Number(f64),
     String(String),
+    Function(Function),
 }
 
 impl fmt::Display for Constant {
@@ -78,6 +79,7 @@ impl fmt::Display for Constant {
         match self {
             Constant::Number(n) => write!(f, "{}", n),
             Constant::String(str) => write!(f, "{}", str),
+            Constant::Function(func) => write!(f, "{}", func.name),
         }
     }
 }

@@ -95,24 +95,22 @@ struct ParseRule {
 
 #[derive(Debug)]
 pub struct Parser<'a> {
-    // chunk: Chunk,
     current: Token,
     previous: Token,
     scanner: &'a mut Scanner,
-    compiler: &'a mut Compiler,
+    // compiler: &'a mut Compiler,
+    compiler_stack: Vec<Compiler>,
     source: String,
     had_error: bool,
     panic_mode: bool,
 }
 
 impl Parser<'_> {
-    pub fn new<'a>(
-        scanner: &'a mut Scanner,
-        compiler: &'a mut Compiler,
-        source: String,
-    ) -> Parser<'a> {
+    pub fn new<'a>(scanner: &'a mut Scanner, source: String) -> Parser<'a> {
+        let mut compiler_stack: Vec<Compiler> = Vec::new();
+        compiler_stack.push(Compiler::new(FunctionType::Script));
+
         Parser {
-            // chunk: Chunk::new(),
             current: Token {
                 ty: TokenType::Init,
                 col: -1,
@@ -128,11 +126,25 @@ impl Parser<'_> {
                 line: 0,
             },
             scanner,
-            compiler,
+            compiler_stack,
             source,
             had_error: false,
             panic_mode: false,
         }
+    }
+
+    fn current_compiler(&self) -> &Compiler {
+        &self.compiler_stack.last().unwrap()
+    }
+
+    fn current_compiler_mut(&mut self) -> &mut Compiler {
+        self.compiler_stack.last_mut().unwrap()
+    }
+
+    fn end_compiler(&mut self) -> Function {
+        self.emit_return();
+        let compiler = self.compiler_stack.pop();
+        compiler.unwrap().function
     }
 
     fn advance(&mut self) {
@@ -173,10 +185,11 @@ impl Parser<'_> {
     }
 
     fn emit_byte(&mut self, byte: Op) -> usize {
-        self.compiler
+        let lineno = self.previous.line;
+        self.current_compiler_mut()
             .function
             .chunk
-            .write_chunk(byte, self.previous.line)
+            .write_chunk(byte, lineno)
     }
 
     fn emit_bytes(&mut self, byte1: Op, byte2: Op) {
@@ -191,7 +204,7 @@ impl Parser<'_> {
 
     fn emit_constant(&mut self, n: f64) {
         let ptr = self
-            .compiler
+            .current_compiler_mut()
             .function
             .chunk
             .add_constant(Constant::Number(n));
@@ -200,10 +213,19 @@ impl Parser<'_> {
 
     fn emit_string_constant(&mut self, str: String) {
         let ptr = self
-            .compiler
+            .current_compiler_mut()
             .function
             .chunk
             .add_constant(Constant::String(str));
+        self.emit_byte(Op::Constant(ptr));
+    }
+
+    fn emit_function_constant(&mut self, func: Function) {
+        let ptr = self
+            .current_compiler_mut()
+            .function
+            .chunk
+            .add_constant(Constant::Function(func));
         self.emit_byte(Op::Constant(ptr));
     }
 
@@ -212,13 +234,13 @@ impl Parser<'_> {
     }
 
     fn patch_jump(&mut self, offset: usize) {
-        let current_offset = self.compiler.function.chunk.code.len();
+        let current_offset = self.current_compiler().function.chunk.code.len();
+        let lineno = self.previous.line;
 
-        self.compiler.function.chunk.patch_jump_instruction(
-            current_offset,
-            offset,
-            self.previous.line,
-        );
+        self.current_compiler_mut()
+            .function
+            .chunk
+            .patch_jump_instruction(current_offset, offset, lineno);
     }
 
     fn emit_loop(&mut self, offset: usize) {
@@ -230,7 +252,9 @@ impl Parser<'_> {
     }
 
     fn declaration(&mut self) {
-        if self.matches(TokenType::Var) {
+        if self.matches(TokenType::Fun) {
+            self.fun_declaration();
+        } else if self.matches(TokenType::Var) {
             self.var_declaration();
         } else {
             self.statement();
@@ -239,6 +263,13 @@ impl Parser<'_> {
         if self.panic_mode {
             self.synchronize();
         }
+    }
+
+    fn fun_declaration(&mut self) {
+        let global = self.parse_variable("expect function name".to_string());
+        self.mark_initialised();
+        self.function(FunctionType::Function);
+        self.define_variable(global);
     }
 
     fn var_declaration(&mut self) {
@@ -261,7 +292,7 @@ impl Parser<'_> {
     fn parse_variable(&mut self, err: String) -> usize {
         self.consume(TokenType::Identifier, err);
         self.declare_variable();
-        if self.compiler.scope_depth > 0 {
+        if self.current_compiler().scope_depth > 0 {
             return 0;
         }
 
@@ -269,18 +300,18 @@ impl Parser<'_> {
     }
 
     fn declare_variable(&mut self) {
-        if self.compiler.scope_depth == 0 {
+        if self.current_compiler().scope_depth == 0 {
             return;
         }
 
         let name = self.previous;
 
-        if self.compiler.local_count != 0 {
-            for local in self.compiler.locals[0..self.compiler.local_count]
+        if self.current_compiler().local_count != 0 {
+            for local in self.current_compiler().locals[0..self.current_compiler().local_count]
                 .iter()
                 .rev()
             {
-                if local.depth != -1 && local.depth < self.compiler.scope_depth {
+                if local.depth != -1 && local.depth < self.current_compiler().scope_depth {
                     break;
                 }
 
@@ -297,19 +328,20 @@ impl Parser<'_> {
     }
 
     fn add_local(&mut self, name: Token) {
-        if self.compiler.local_count == u8::MAX as usize {
+        if self.current_compiler().local_count == u8::MAX as usize {
             self.report_error("too many local variables".to_string());
         }
 
-        self.compiler.locals[self.compiler.local_count] = Local { name, depth: -1 };
+        let local_count = self.current_compiler().local_count;
+        self.current_compiler_mut().locals[local_count] = Local { name, depth: -1 };
 
-        self.compiler.local_count += 1;
+        self.current_compiler_mut().local_count += 1;
     }
 
     fn identifier_constant(&mut self, name: Token) -> usize {
         let variable_name = self.scanner.literal(name.start, name.length);
         return self
-            .compiler
+            .current_compiler_mut()
             .function
             .chunk
             .add_constant(Constant::String(variable_name));
@@ -324,7 +356,7 @@ impl Parser<'_> {
     }
 
     fn define_variable(&mut self, global: usize) {
-        if self.compiler.scope_depth > 0 {
+        if self.current_compiler().scope_depth > 0 {
             self.mark_initialised();
             return;
         }
@@ -333,7 +365,13 @@ impl Parser<'_> {
     }
 
     fn mark_initialised(&mut self) {
-        self.compiler.locals[self.compiler.local_count - 1].depth = self.compiler.scope_depth;
+        if self.current_compiler().scope_depth == 0 {
+            return;
+        }
+
+        let local_count = self.current_compiler().local_count;
+        self.current_compiler_mut().locals[local_count - 1].depth =
+            self.current_compiler().scope_depth;
     }
 
     fn statement(&mut self) {
@@ -362,18 +400,41 @@ impl Parser<'_> {
         self.consume(TokenType::RightBrace, "expect `}` after block".to_string());
     }
 
+    fn function(&mut self, ty: FunctionType) {
+        let compiler = Compiler::new(ty);
+        self.begin_scope();
+
+        self.consume(
+            TokenType::LeftParen,
+            "expect `(` after function name".to_string(),
+        );
+        self.consume(
+            TokenType::RightParen,
+            "expect `)` after parameters".to_string(),
+        );
+        self.consume(
+            TokenType::LeftBrace,
+            "expect `{` before function body".to_string(),
+        );
+        self.block();
+        self.end_compiler();
+        self.emit_function_constant(compiler.function);
+    }
+
     fn begin_scope(&mut self) {
-        self.compiler.scope_depth += 1;
+        self.current_compiler_mut().scope_depth += 1;
     }
 
     fn end_scope(&mut self) {
-        self.compiler.scope_depth -= 1;
+        self.current_compiler_mut().scope_depth -= 1;
 
-        while self.compiler.local_count > 0
-            && self.compiler.locals[self.compiler.local_count - 1].depth > self.compiler.scope_depth
+        let local_count = self.current_compiler().local_count;
+        while self.current_compiler().local_count > 0
+            && self.current_compiler_mut().locals[local_count - 1].depth
+                > self.current_compiler().scope_depth
         {
             self.emit_byte(Op::Pop);
-            self.compiler.local_count -= 1;
+            self.current_compiler_mut().local_count -= 1;
         }
     }
 
@@ -394,7 +455,7 @@ impl Parser<'_> {
             self.expression_statement();
         }
 
-        let mut loop_start = self.compiler.function.chunk.code.len();
+        let mut loop_start = self.current_compiler().function.chunk.code.len();
 
         let mut exit_jump = 0;
         if !self.matches(TokenType::Semicolon) {
@@ -411,7 +472,7 @@ impl Parser<'_> {
 
         if !self.matches(TokenType::RightParen) {
             let body_jump = self.emit_jump(Op::Jump(0));
-            let increment_start = self.compiler.function.chunk.code.len();
+            let increment_start = self.current_compiler().function.chunk.code.len();
             self.expression();
             self.emit_byte(Op::Pop);
             self.consume(
@@ -461,7 +522,7 @@ impl Parser<'_> {
     }
 
     fn while_statement(&mut self) {
-        let loop_start = self.compiler.function.chunk.code.len();
+        let loop_start = self.current_compiler().function.chunk.code.len();
         self.consume(TokenType::LeftParen, "expect `(` after `while`".to_string());
         self.expression();
         self.consume(
@@ -637,7 +698,8 @@ impl Parser<'_> {
     }
 
     fn resolve_local(&mut self, name: Token) -> i64 {
-        for (i, local) in self.compiler.locals[..self.compiler.local_count]
+        let local_count = self.current_compiler().local_count;
+        for (i, local) in self.current_compiler().locals[..local_count]
             .iter()
             .enumerate()
             .rev()
@@ -772,8 +834,7 @@ impl Parser<'_> {
 
 pub fn compile(source: String) -> Result<Function, String> {
     let mut scanner = Scanner::new(&source);
-    let mut compiler = Compiler::new(FunctionType::Script);
-    let mut parser = Parser::new(&mut scanner, &mut compiler, source);
+    let mut parser = Parser::new(&mut scanner, source);
 
     parser.advance();
 
@@ -784,7 +845,7 @@ pub fn compile(source: String) -> Result<Function, String> {
     if parser.had_error {
         Err("compilation error".to_string())
     } else {
-        Ok(compiler.function)
+        Ok(parser.current_compiler().function.clone())
     }
 }
 

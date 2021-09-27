@@ -348,6 +348,7 @@ impl VM {
         match constant {
             Constant::Number(n) => Value::Number(*n),
             Constant::String(str) => Value::String(str.to_string()),
+            Constant::Function(func) => Value::Function(func.clone()),
         }
     }
 
