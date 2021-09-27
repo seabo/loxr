@@ -32,12 +32,12 @@ pub struct Compiler {
 }
 
 impl Compiler {
-    fn new(function_type: FunctionType) -> Self {
+    fn new(function_type: FunctionType, name: String) -> Self {
         Compiler {
             function: Function {
                 arity: 0,
                 chunk: Chunk::new(),
-                name: String::from(""),
+                name: String::from(name),
             },
             function_type: function_type,
             locals: [Local {
@@ -108,7 +108,7 @@ pub struct Parser<'a> {
 impl Parser<'_> {
     pub fn new<'a>(scanner: &'a mut Scanner, source: String) -> Parser<'a> {
         let mut compiler_stack: Vec<Compiler> = Vec::new();
-        compiler_stack.push(Compiler::new(FunctionType::Script));
+        compiler_stack.push(Compiler::new(FunctionType::Script, "".to_string()));
 
         Parser {
             current: Token {
@@ -401,13 +401,33 @@ impl Parser<'_> {
     }
 
     fn function(&mut self, ty: FunctionType) {
-        let compiler = Compiler::new(ty);
+        let name = self
+            .scanner
+            .literal(self.previous.start, self.previous.length);
+        self.compiler_stack
+            .push(Compiler::new(FunctionType::Function, name));
+
         self.begin_scope();
 
         self.consume(
             TokenType::LeftParen,
             "expect `(` after function name".to_string(),
         );
+
+        if !self.check(TokenType::RightParen) {
+            loop {
+                self.current_compiler_mut().function.arity += 1;
+                if self.current_compiler().function.arity > 255 {
+                    self.report_error("can't have more than 255 parameters".to_string());
+                }
+                let constant = self.parse_variable("expect parameter name".to_string());
+                self.define_variable(constant);
+                if !self.matches(TokenType::Comma) {
+                    break;
+                }
+            }
+        }
+
         self.consume(
             TokenType::RightParen,
             "expect `)` after parameters".to_string(),
@@ -417,8 +437,8 @@ impl Parser<'_> {
             "expect `{` before function body".to_string(),
         );
         self.block();
-        self.end_compiler();
-        self.emit_function_constant(compiler.function);
+        let func_obj = self.end_compiler();
+        self.emit_function_constant(func_obj);
     }
 
     fn begin_scope(&mut self) {

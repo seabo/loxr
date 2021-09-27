@@ -50,7 +50,7 @@ impl fmt::Display for Value {
                 f,
                 "<{}>",
                 if func.name == "" {
-                    String::from("<script>")
+                    String::from("script")
                 } else {
                     String::from(&func.name)
                 }

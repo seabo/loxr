@@ -1,0 +1,5 @@
+fun hello(a) {
+    print "hello world";
+}
+
+print hello;
