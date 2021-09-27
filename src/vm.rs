@@ -1,7 +1,6 @@
 use crate::builtins;
 use crate::chunk::{Constant, Function, Lineno, Op};
 use crate::compiler;
-use crate::debug;
 use crate::value;
 use crate::value::Value;
 
@@ -121,7 +120,7 @@ impl VM {
 
                 match result {
                     Some(return_value) => {
-                        for idx in self.frame().slot_offset..self.stack.len() + 1 {
+                        for _idx in self.frame().slot_offset..self.stack.len() + 1 {
                             self.pop();
                         }
 

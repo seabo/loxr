@@ -1,6 +1,6 @@
-use crate::compiler;
+// use crate::compiler;
 use crate::line_reader;
-use crate::vm;
+// use crate::vm;
 
 use line_reader::{LineReadStatus, LineReader};
 
@@ -29,7 +29,7 @@ Authors: {} \n\
     }
 }
 
-fn execute_line(line: String) {
+fn execute_line(_line: String) {
     // let maybe_function = compiler::compile(line);
     // match maybe_function {
     //     Ok(function) => {

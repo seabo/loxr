@@ -86,6 +86,7 @@ pub fn disassemble_chunk(chunk: &Chunk, name: &str) -> String {
     lines.join("\n")
 }
 
+#[allow(dead_code)]
 pub fn print_stack(stack: &Vec<value::Value>) {
     print!("STACK: ");
     for i in stack {

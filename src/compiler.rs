@@ -424,7 +424,7 @@ impl Parser<'_> {
         self.consume(TokenType::RightBrace, "expect `}` after block".to_string());
     }
 
-    fn function(&mut self, ty: FunctionType) {
+    fn function(&mut self, _ty: FunctionType) {
         let name = self
             .scanner
             .literal(self.previous.start, self.previous.length);
@@ -441,9 +441,9 @@ impl Parser<'_> {
         if !self.check(TokenType::RightParen) {
             loop {
                 self.current_compiler_mut().function.arity += 1;
-                if self.current_compiler().function.arity > 255 {
-                    self.report_error("can't have more than 255 parameters".to_string());
-                }
+                // if self.current_compiler().function.arity > 255 {
+                //     self.report_error("can't have more than 255 parameters".to_string());
+                // }
                 let param_const_idx = self.parse_variable("expect parameter name".to_string());
                 self.define_variable(param_const_idx);
                 if !self.matches(TokenType::Comma) {
